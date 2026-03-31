@@ -4,6 +4,7 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { Documentation } from './app/pages/documentation/documentation';
 import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
+import { Notifications } from './app/pages/notifications/notifications';
 
 export const appRoutes: Routes = [
     {
@@ -27,6 +28,15 @@ export const appRoutes: Routes = [
                     breadcrumb: 'Documentation',
                     pageTitle: 'Documentation',
                     pageDescription: 'Read setup, usage, and component details.'
+                }
+            },
+            {
+                path: 'notifications',
+                component: Notifications,
+                data: {
+                    breadcrumb: 'Notifications',
+                    pageTitle: 'Notifications',
+                    pageDescription: 'View and manage all your notifications.'
                 }
             },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }

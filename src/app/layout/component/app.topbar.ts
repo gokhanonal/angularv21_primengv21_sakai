@@ -6,6 +6,8 @@ import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { NotificationService } from '@/app/layout/service/notification.service';
+import { NotificationDetail } from '@/app/pages/notifications/notification-detail';
 
 interface BreadcrumbItem {
     label: string;
@@ -15,7 +17,7 @@ interface BreadcrumbItem {
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [CommonModule, RouterModule, StyleClassModule, AppConfigurator],
+    imports: [CommonModule, RouterModule, StyleClassModule, AppConfigurator, NotificationDetail],
     template: ` <div class="layout-topbar">
         <div class="topbar-start">
             @if (showMenuButton()) {
@@ -69,10 +71,49 @@ interface BreadcrumbItem {
                         <i class="pi pi-calendar"></i>
                         <span>Calendar</span>
                     </button>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
-                    </button>
+                    <div class="relative">
+                        <button
+                            type="button"
+                            class="layout-topbar-action"
+                            pStyleClass="@next"
+                            enterFromClass="hidden"
+                            enterActiveClass="animate-scalein"
+                            leaveToClass="hidden"
+                            leaveActiveClass="animate-fadeout"
+                            [hideOnOutsideClick]="true"
+                        >
+                            <span class="layout-topbar-notification">
+                                <i class="pi pi-inbox"></i>
+                                @if (unreadCount() > 0 && unreadCount() <= 9) {
+                                    <span class="layout-topbar-badge">{{ unreadCount() }}</span>
+                                } @else if (unreadCount() > 9) {
+                                    <span class="layout-topbar-dot"></span>
+                                }
+                            </span>
+                            <span>Messages</span>
+                        </button>
+                        <div class="layout-notification-dropdown hidden">
+                            <div class="layout-notification-dropdown-header">Notifications</div>
+                            @for (item of notificationService.latestFive(); track item.id) {
+                                <a class="layout-notification-item" [ngClass]="{ 'is-unread': !item.isRead }" (click)="notificationService.openDetail(item)">
+                                    <i class="pi" [ngClass]="{
+                                        'pi-info-circle text-blue-500': item.type === 'info',
+                                        'pi-check-circle text-green-500': item.type === 'success',
+                                        'pi-exclamation-triangle text-orange-500': item.type === 'warning',
+                                        'pi-times-circle text-red-500': item.type === 'error'
+                                    }"></i>
+                                    <div class="layout-notification-item-content">
+                                        <div class="layout-notification-item-title">{{ item.title }}</div>
+                                        <div class="layout-notification-item-desc">{{ item.description }}</div>
+                                    </div>
+                                </a>
+                            }
+                            @if (notificationService.latestFive().length === 0) {
+                                <div class="layout-notification-empty">No notifications</div>
+                            }
+                            <a routerLink="/notifications" class="layout-notification-show-all">Show All</a>
+                        </div>
+                    </div>
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-user"></i>
                         <span>Profile</span>
@@ -80,6 +121,7 @@ interface BreadcrumbItem {
                 </div>
             </div>
         </div>
+        <app-notification-detail />
     </div>`
 })
 export class AppTopbar {
@@ -91,7 +133,11 @@ export class AppTopbar {
 
     layoutService = inject(LayoutService);
 
+    notificationService = inject(NotificationService);
+
     breadcrumbs = signal<BreadcrumbItem[]>([{ label: 'Home', url: '/' }]);
+
+    unreadCount = computed(() => this.notificationService.unreadCount());
 
     pageTitle = computed(() => {
         const crumbs = this.breadcrumbs();
