@@ -35,9 +35,11 @@
                         ],
                         "styles": [
                             "src/assets/styles.scss",
-                            "src/assets/tailwind.css"
+                            "src/assets/tailwind.css",
+                            "node_modules/leaflet/dist/leaflet.css"
                         ],
-                        "scripts": []
+                        "scripts": [],
+                        "allowedCommonJsDependencies": ["leaflet"]
                     },
                     "configurations": {
                         "production": {

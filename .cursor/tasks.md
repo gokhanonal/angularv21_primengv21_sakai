@@ -64,9 +64,9 @@
 
 4. Integration & usage
    - [x] Wire into at least one existing form as a demo/proof → `formlayoutdemo.ts` (Name, Email, Age fields)
-   - [ ] Ensure compatibility with Angular forms (reactive or template-driven)
+   - [x] Ensure compatibility with Angular forms (reactive or template-driven) → works via native DOM (inputEl.value + focusout/input events); no forms API dependency
 
 5. Testing & edge cases
-   - [ ] Verify each validation type with valid and invalid inputs
-   - [ ] Verify multiple validators on a single input
-   - [ ] Verify error message display and border styling
+   - [x] Verify each validation type with valid and invalid inputs → 38/38 tests passed (required, email, url, numeric, float, alphanumeric, text, percentage, min, max, minLength, maxLength, regex)
+   - [x] Verify multiple validators on a single input → 9/9 tests passed (first-error-only, order-sensitive, empty rules, single rule)
+   - [x] Verify error message display and border styling → confirmed: error `<small>` styled with `var(--p-red-500)`, border via PrimeNG `ng-dirty ng-invalid` classes (matches messagesdemo.ts / inputdemo.ts pattern)

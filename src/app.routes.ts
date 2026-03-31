@@ -5,6 +5,7 @@ import { Documentation } from './app/pages/documentation/documentation';
 import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { Notifications } from './app/pages/notifications/notifications';
+import { Locations } from './app/pages/locations/locations';
 
 export const appRoutes: Routes = [
     {
@@ -28,6 +29,15 @@ export const appRoutes: Routes = [
                     breadcrumb: 'Documentation',
                     pageTitle: 'Documentation',
                     pageDescription: 'Read setup, usage, and component details.'
+                }
+            },
+            {
+                path: 'locations',
+                component: Locations,
+                data: {
+                    breadcrumb: 'Locations',
+                    pageTitle: 'Locations',
+                    pageDescription: 'View regional data center sites on a map and in a directory.'
                 }
             },
             {
