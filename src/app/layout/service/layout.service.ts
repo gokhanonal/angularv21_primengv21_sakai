@@ -1,4 +1,6 @@
 import { Injectable, effect, signal, computed } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID, inject } from '@angular/core';
 
 export interface LayoutConfig {
     preset: string;
@@ -6,6 +8,15 @@ export interface LayoutConfig {
     surface: string | undefined | null;
     darkTheme: boolean;
     menuMode: string;
+}
+
+interface BrandingSettings {
+    company_name: string;
+    theme_name: string;
+    theme: 'light' | 'dark';
+    primary_color: string;
+    surface_color: string;
+    menu_mode: string;
 }
 
 interface LayoutState {
@@ -21,6 +32,12 @@ interface LayoutState {
     providedIn: 'root'
 })
 export class LayoutService {
+    private readonly platformId = inject(PLATFORM_ID);
+
+    private readonly brandingStorageKey = 'branding';
+
+    private readonly defaultCompanyName = 'OVOLT';
+
     layoutConfig = signal<LayoutConfig>({
         preset: 'Aura',
         primary: 'emerald',
@@ -55,6 +72,9 @@ export class LayoutService {
     private initialized = false;
 
     constructor() {
+        this.loadBrandingFromStorage();
+        this.saveBrandingToStorage(this.layoutConfig());
+
         effect(() => {
             const config = this.layoutConfig();
 
@@ -64,7 +84,56 @@ export class LayoutService {
             }
 
             this.handleDarkModeTransition(config);
+            this.saveBrandingToStorage(config);
         });
+    }
+
+    private loadBrandingFromStorage(): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
+
+        try {
+            const rawBranding = localStorage.getItem(this.brandingStorageKey);
+            if (!rawBranding) {
+                return;
+            }
+
+            const branding = JSON.parse(rawBranding) as Partial<BrandingSettings>;
+            const hasThemeName = typeof branding.theme_name === 'string';
+            const hasTheme = branding.theme === 'light' || branding.theme === 'dark';
+            const hasPrimaryColor = typeof branding.primary_color === 'string';
+            const hasMenuMode = branding.menu_mode === 'static' || branding.menu_mode === 'overlay';
+            const hasSurfaceColor = typeof branding.surface_color === 'string' && branding.surface_color.length > 0;
+
+            this.layoutConfig.update((current) => ({
+                ...current,
+                ...(hasThemeName ? { preset: branding.theme_name as string } : {}),
+                ...(hasTheme ? { darkTheme: branding.theme === 'dark' } : {}),
+                ...(hasPrimaryColor ? { primary: branding.primary_color as string } : {}),
+                ...(hasSurfaceColor ? { surface: branding.surface_color as string } : {}),
+                ...(hasMenuMode ? { menuMode: branding.menu_mode as string } : {})
+            }));
+        } catch {
+            localStorage.removeItem(this.brandingStorageKey);
+        }
+    }
+
+    private saveBrandingToStorage(config: LayoutConfig): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
+
+        const branding: BrandingSettings = {
+            company_name: this.defaultCompanyName,
+            theme_name: config.preset,
+            theme: config.darkTheme ? 'dark' : 'light',
+            primary_color: config.primary,
+            surface_color: config.surface || 'slate',
+            menu_mode: config.menuMode
+        };
+
+        localStorage.setItem(this.brandingStorageKey, JSON.stringify(branding));
     }
 
     private handleDarkModeTransition(config: LayoutConfig): void {
@@ -93,12 +162,12 @@ export class LayoutService {
     }
 
     onMenuToggle() {
-        if (this.isOverlay()) {
-            this.layoutState.update((prev) => ({ ...prev, overlayMenuActive: !this.layoutState().overlayMenuActive }));
-        }
-
         if (this.isDesktop()) {
-            this.layoutState.update((prev) => ({ ...prev, staticMenuDesktopInactive: !this.layoutState().staticMenuDesktopInactive }));
+            if (this.isOverlay()) {
+                this.layoutState.update((prev) => ({ ...prev, overlayMenuActive: !this.layoutState().overlayMenuActive }));
+            } else {
+                this.layoutState.update((prev) => ({ ...prev, staticMenuDesktopInactive: !this.layoutState().staticMenuDesktopInactive }));
+            }
         } else {
             this.layoutState.update((prev) => ({ ...prev, mobileMenuActive: !this.layoutState().mobileMenuActive }));
         }

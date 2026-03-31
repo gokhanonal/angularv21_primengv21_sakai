@@ -442,5 +442,12 @@ export class AppConfigurator {
 
     onMenuModeChange(event: string) {
         this.layoutService.layoutConfig.update((prev) => ({ ...prev, menuMode: event }));
+        if (event === 'static') {
+            this.layoutService.layoutState.update((prev) => ({
+                ...prev,
+                staticMenuDesktopInactive: false,
+                overlayMenuActive: false
+            }));
+        }
     }
 }

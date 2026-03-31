@@ -4,8 +4,32 @@ import { Crud } from './crud/crud';
 import { Empty } from './empty/empty';
 
 export default [
-    { path: 'documentation', component: Documentation },
-    { path: 'crud', component: Crud },
-    { path: 'empty', component: Empty },
+    {
+        path: 'documentation',
+        component: Documentation,
+        data: {
+            breadcrumb: 'Documentation',
+            pageTitle: 'Documentation',
+            pageDescription: 'Review documentation and integration notes.'
+        }
+    },
+    {
+        path: 'crud',
+        component: Crud,
+        data: {
+            breadcrumb: 'Crud',
+            pageTitle: 'CRUD',
+            pageDescription: 'Manage records with create, update, and delete actions.'
+        }
+    },
+    {
+        path: 'empty',
+        component: Empty,
+        data: {
+            breadcrumb: 'Empty',
+            pageTitle: 'Empty Page',
+            pageDescription: 'Use this page as a starting point for custom content.'
+        }
+    },
     { path: '**', redirectTo: '/notfound' }
 ] as Routes;

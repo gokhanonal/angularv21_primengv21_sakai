@@ -10,9 +10,25 @@ export const appRoutes: Routes = [
         path: '',
         component: AppLayout,
         children: [
-            { path: '', component: Dashboard },
+            {
+                path: '',
+                component: Dashboard,
+                data: {
+                    breadcrumb: 'eCommerce',
+                    pageTitle: 'eCommerce Dashboard',
+                    pageDescription: 'TailAdmin demo ile ayni icerik duzeni (ornek veri).'
+                }
+            },
             { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
-            { path: 'documentation', component: Documentation },
+            {
+                path: 'documentation',
+                component: Documentation,
+                data: {
+                    breadcrumb: 'Documentation',
+                    pageTitle: 'Documentation',
+                    pageDescription: 'Read setup, usage, and component details.'
+                }
+            },
             { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }
         ]
     },
