@@ -105,6 +105,27 @@ export class AppSidebar implements OnInit, OnDestroy {
         }
 
         event.preventDefault();
+        const config = this.layoutService.layoutConfig();
+        const state = this.layoutService.layoutState();
+
+        if (this.layoutService.isDesktop() && config.menuMode === 'overlay' && !state.overlayMenuActive) {
+            this.layoutService.layoutState.update((prev) => ({
+                ...prev,
+                overlayMenuActive: true
+            }));
+            setTimeout(() => this.focusSearchInput(), 0);
+            return;
+        }
+
+        if (!this.layoutService.isDesktop() && !state.mobileMenuActive) {
+            this.layoutService.layoutState.update((prev) => ({
+                ...prev,
+                mobileMenuActive: true
+            }));
+            setTimeout(() => this.focusSearchInput(), 0);
+            return;
+        }
+
         this.focusSearchInput();
     }
 

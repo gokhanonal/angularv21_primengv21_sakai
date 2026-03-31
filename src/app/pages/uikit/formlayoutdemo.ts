@@ -14,7 +14,23 @@ import { TextareaModule } from 'primeng/textarea';
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
                 <div class="card flex flex-col gap-4">
-                    <div class="font-semibold text-xl">Vertical</div>
+
+                    <div class="card-header">
+                        <div class="card-heading">
+                            <h3 class="card-title">Vertical Form Layout</h3>
+                            <p class="card-description">Sample form layout</p>
+                        </div>
+                        <div class="card-actions">
+                            <a href="#" class="card-action-link" (click)="$event.preventDefault()">
+                                View More
+                                <i class="pi pi-angle-right"></i>
+                            </a>
+                            <button type="button" class="card-action-icon" aria-label="Delete target">
+                                <i class="pi pi-trash text-red-500"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-header-divider"></div>
                     <div class="flex flex-col gap-2">
                         <label for="name1">Name</label>
                         <input pInputText id="name1" type="text" />

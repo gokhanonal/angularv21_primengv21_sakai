@@ -7,7 +7,22 @@ import { LayoutService } from '@/app/layout/service/layout.service';
     selector: 'app-revenue-stream-widget',
     imports: [ChartModule],
     template: `<div class="card mb-8!">
-        <div class="font-semibold text-xl mb-4">Revenue Stream</div>
+        <div class="card-header">
+            <div class="card-heading">
+                <h3 class="card-title">Monthly Target</h3>
+                <p class="card-description">Target you've set for each month</p>
+            </div>
+            <div class="card-actions">
+                <a href="#" class="card-action-link" (click)="$event.preventDefault()">
+                    View More
+                    <i class="pi pi-angle-right"></i>
+                </a>
+                <button type="button" class="card-action-icon" aria-label="Delete target">
+                    <i class="pi pi-trash text-red-500"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-header-divider"></div>
         <p-chart type="bar" [data]="chartData()" [options]="chartOptions()" class="h-100" />
     </div>`
 })
