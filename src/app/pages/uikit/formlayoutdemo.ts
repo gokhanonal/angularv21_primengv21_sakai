@@ -5,11 +5,13 @@ import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
+import { ValidatedInputComponent } from '@/app/shared/validated-input/validated-input.component';
+import { ValidationRule } from '@/app/shared/validated-input/validated-input.contract';
 
 @Component({
     selector: 'app-formlayout-demo',
     standalone: true,
-    imports: [InputTextModule, FluidModule, ButtonModule, SelectModule, FormsModule, TextareaModule],
+    imports: [InputTextModule, FluidModule, ButtonModule, SelectModule, FormsModule, TextareaModule, ValidatedInputComponent],
     template: `<p-fluid>
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
@@ -33,15 +35,27 @@ import { TextareaModule } from 'primeng/textarea';
                     <div class="card-header-divider"></div>
                     <div class="flex flex-col gap-2">
                         <label for="name1">Name</label>
-                        <input pInputText id="name1" type="text" />
+                        <app-validated-input [rules]="nameRules">
+                            <input pInputText id="name1" type="text" />
+                        </app-validated-input>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label for="email1">Email</label>
-                        <input pInputText id="email1" type="text" />
+                        <app-validated-input [rules]="emailRules">
+                            <input pInputText id="email1" type="text" />
+                        </app-validated-input>
                     </div>
                     <div class="flex flex-col gap-2">
                         <label for="age1">Age</label>
-                        <input pInputText id="age1" type="text" />
+                        <app-validated-input [rules]="ageRules">
+                            <input pInputText id="age1" type="text" />
+                        </app-validated-input>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="url1">URL</label>
+                        <app-validated-input [rules]="urlRules">
+                            <input pInputText id="url1" type="text" />
+                        </app-validated-input>
                     </div>
                 </div>
 
@@ -132,9 +146,34 @@ import { TextareaModule } from 'primeng/textarea';
                 </div>
             </div>
         </div>
+
+        
     </p-fluid>`
 })
 export class FormLayoutDemo {
+    nameRules: ValidationRule[] = [
+        { type: 'required', message: 'Name is required' },
+        { type: 'text', minLength: 2, message: 'Name must be at least 2 characters (letters only)' }
+    ];
+
+    emailRules: ValidationRule[] = [
+        { type: 'required', message: 'Email is required' },
+        { type: 'email', message: 'Please enter a valid email address' }
+    ];
+
+    ageRules: ValidationRule[] = [
+        { type: 'required', message: 'Age is required' },
+        { type: 'numeric', message: 'Age must be a whole number' },
+        { min: 1, max: 120, message: 'Age must be between 1 and 120' }
+    ];
+
+    urlRules: ValidationRule[] = [
+        { type: 'required', message: 'Website is required' },
+        { type: 'url', message: 'Please enter a valid URL (e.g. https://example.com)' }
+    ];
+
+    
+
     dropdownItems = [
         { name: 'Option 1', code: 'Option 1' },
         { name: 'Option 2', code: 'Option 2' },
