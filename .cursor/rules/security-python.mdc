@@ -1,0 +1,179 @@
+---
+alwaysApply: true
+---
+
+# Python Secure Development Rule (Strict Enforcement)
+
+## 🎯 Purpose
+Enforce secure, production-grade Python code by rejecting unsafe patterns and requiring best practices.
+
+---
+
+## 🚫 HARD REJECT RULES (MUST NEVER APPEAR)
+
+### 🔐 Secrets & Credentials
+- Reject if:
+  - `password\s*=\s*["'].*["']`
+  - `api[_-]?key\s*=\s*["'].*["']`
+  - `secret\s*=\s*["'].*["']`
+  - `ACCESS_KEY|SECRET_KEY`
+- Message:
+  > Hardcoded secrets are forbidden. Use environment variables or a secret manager.
+
+---
+
+### ⚠️ Dangerous Functions
+- Reject if:
+  - `eval\(`
+  - `exec\(`
+  - `pickle\.loads`
+  - `yaml\.load\(` (without Loader)
+- Message:
+  > Unsafe code execution or deserialization detected.
+
+---
+
+### 🛢️ SQL Injection Risk
+- Reject if:
+  - `cursor\.execute\(f["']`
+  - `execute\(["']SELECT .* \+`
+- Message:
+  > SQL Injection. Use parameterized queries or ORM.
+
+---
+
+
+### 🔐 Environment Variables
+- Reject if:
+  - Environment variables (like Secrets & Credentials etc.) stored outside of any environment files (for eg. .env.dev, .env, env.uat etc)
+- Message:
+  > Don't store any secrets outside from environment files
+
+---
+
+### 🌐 Debug / Dev Mode in Production
+- Reject if:
+  - `debug\s*=\s*True`
+  - `app\.run\(.*debug=True`
+- Message:
+  > Debug mode must not be enabled in production.
+
+---
+
+## ⚠️ CONDITIONAL REJECT (REQUIRES FIX)
+
+### Input Validation
+- Reject if:
+  - API endpoint exists but no validation:
+    - `@app\.(get|post|put|delete)` AND NOT `pydantic|BaseModel`
+- Message:
+  > All inputs must be validated using Pydantic or equivalent.
+
+---
+
+### Authentication Missing
+- Reject if:
+  - Protected route exists without auth dependency
+- Message:
+  > Endpoint requires authentication (JWT/OAuth2).
+
+---
+
+### Console Log
+- Reject if:
+  - Logging to Console outside the development environment
+- Message:
+  > Do not log to console outside the development environment
+
+---
+
+## ✅ REQUIRED PATTERNS (MUST EXIST)
+
+### Type Safety
+- Require:
+  - `def .*\(.*\) ->`
+- Message:
+  > All functions must include type hints.
+
+---
+
+### Logging
+- Require at least one:
+  - `import logging`
+- Message:
+  > Logging must be implemented.
+
+---
+
+### Dependency Safety
+- Require:
+  - `requirements.txt` OR `pyproject.toml`
+- Message:
+  > Dependencies must be explicitly defined and pinned.
+
+---
+
+## 🔒 SECURITY BEST PRACTICES (AUTO-SUGGEST)
+
+### Password Handling
+- Suggest replacing:
+  - plain password logic → `bcrypt` / `passlib`
+
+### Config Management
+- Suggest:
+  - `os.environ.get()` or `pydantic.BaseSettings`
+
+---
+
+## 🧪 TESTING ENFORCEMENT
+- Require:
+  - `pytest` usage OR `/tests` folder
+- Message:
+  > Tests are required for all business logic.
+
+---
+
+## 🐳 DOCKER SECURITY (IF Dockerfile EXISTS)
+- Reject if:
+  - `USER root`
+- Require:
+  - non-root user
+- Message:
+  > Containers must not run as root.
+
+---
+
+## 📦 CI/CD ENFORCEMENT (if .gitlab-ci.yml or similar exists)
+- Require steps:
+  - lint
+  - test
+  - security scan (bandit)
+- Message:
+  > CI pipeline must include lint, test, and security checks.
+
+---
+
+## 🧠 AI GENERATED CODE POLICY
+- Reject if:
+  - No validation
+  - No error handling
+  - No typing
+- Message:
+  > AI-generated code must meet all engineering and security standards.
+
+---
+
+## 📌 CODE REVIEW AUTO-CHECK
+Ensure:
+- [ ] No hardcoded secrets
+- [ ] Input validation exists
+- [ ] Auth is enforced
+- [ ] Errors handled
+- [ ] Tests included
+
+---
+
+## 🏁 FINAL ENFORCEMENT
+If ANY "HARD REJECT" rule is triggered → ❌ BLOCK CODE  
+If "REQUIRED" rules missing → ⚠️ REQUEST CHANGES  
+Else → ✅ APPROVE

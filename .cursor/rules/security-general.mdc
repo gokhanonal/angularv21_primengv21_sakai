@@ -1,0 +1,24 @@
+---
+description: Security guidelines for secrets, dependencies, and input validation
+alwaysApply: true
+---
+
+# security
+
+- Store secrets (API tokens, passwords) in environment variables only; never commit them or echo them in logs/UI.
+- Do not expose sensitive values in error messages, prompts, or client-side code.
+- Validate and sanitize external input (HTTP params, JQL fragments if user-supplied, file paths). Prefer parameterized APIs over string concatenation for queries where applicable.
+
+- Use `os.environ["VAR"]` or a `.env` file loaded via `python-dotenv`.
+- Before adding a Python dependency, verify it has a release within the last 90 days
+  and no unpatched CVEs on https://pypi.org or Snyk.
+- Sanitize all user-supplied input before embedding it in JQL, SQL, or shell commands.
+  Use parameterized queries or allowlist validation — never string concatenation.
+  ```python
+  # BAD
+  jql = f"project = {user_input}"
+  # GOOD
+  jql = f"project = {sanitize_jql_value(user_input)}"
+- Never log, return in HTTP responses, or display in UI: passwords, API tokens,
+  connection strings, or secret keys. Mask or omit them entirely.
+- Never log, any data which subjects KVKK, GDPR and GDPR UK

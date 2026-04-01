@@ -1,18 +1,20 @@
 import { AfterViewInit, Component, DestroyRef, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { ButtonModule } from 'primeng/button';
 import * as L from 'leaflet';
 import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
 
 @Component({
     selector: 'app-locations',
     standalone: true,
-    imports: [CommonModule, FormsModule, TableModule, InputTextModule, TagModule, IconFieldModule, InputIconModule],
+    imports: [CommonModule, FormsModule, RouterModule, TableModule, InputTextModule, TagModule, IconFieldModule, InputIconModule, ButtonModule],
     template: `
         <div class="card mb-4">
             <div class="font-semibold text-xl mb-1">Regional sites</div>
@@ -28,11 +30,13 @@ import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
                 [paginator]="true"
                 [rows]="10"
                 [rowsPerPageOptions]="[10, 25, 50]"
-                [globalFilterFields]="['site', 'city', 'country', 'region', 'status']"
+                [globalFilterFields]="['location_code', 'site', 'city', 'country', 'region', 'status']"
                 [showCurrentPageReport]="true"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-                responsiveLayout="scroll"
-                dataKey="site"
+                [scrollable]="true"
+                scrollHeight="500px"
+                [tableStyle]="{ 'min-width': '72rem' }"
+                dataKey="location_id"
             >
                 <ng-template #caption>
                     <div class="flex items-center justify-between">
@@ -45,17 +49,20 @@ import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
                 </ng-template>
                 <ng-template #header>
                     <tr>
-                        <th pSortableColumn="site">Site <p-sortIcon field="site" /></th>
-                        <th pSortableColumn="city">City <p-sortIcon field="city" /></th>
-                        <th pSortableColumn="country">Country <p-sortIcon field="country" /></th>
-                        <th pSortableColumn="region">Region <p-sortIcon field="region" /></th>
-                        <th pSortableColumn="capacity">Capacity <p-sortIcon field="capacity" /></th>
-                        <th pSortableColumn="status">Status <p-sortIcon field="status" /></th>
-                        <th>Lat / Lng</th>
+                        <th style="min-width: 9rem" pSortableColumn="location_code">Code <p-sortIcon field="location_code" /></th>
+                        <th style="min-width: 10rem" pSortableColumn="site">Site <p-sortIcon field="site" /></th>
+                        <th style="min-width: 8rem" pSortableColumn="city">City <p-sortIcon field="city" /></th>
+                        <th style="min-width: 8rem" pSortableColumn="country">Country <p-sortIcon field="country" /></th>
+                        <th style="min-width: 8rem" pSortableColumn="region">Region <p-sortIcon field="region" /></th>
+                        <th style="min-width: 7rem" pSortableColumn="capacity">Capacity <p-sortIcon field="capacity" /></th>
+                        <th style="min-width: 7rem" pSortableColumn="status">Status <p-sortIcon field="status" /></th>
+                        <th style="min-width: 10rem">Lat / Lng</th>
+                        <th style="min-width: 7rem" alignFrozen="right" pFrozenColumn [frozen]="true" class="text-end">Detail</th>
                     </tr>
                 </ng-template>
                 <ng-template #body let-site>
                     <tr>
+                        <td class="font-mono text-sm">{{ site.location_code }}</td>
                         <td class="font-medium">{{ site.site }}</td>
                         <td>{{ site.city }}</td>
                         <td>{{ site.country }}</td>
@@ -65,6 +72,9 @@ import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
                             <span class="font-medium" [style.color]="getStatusColor(site.status)">{{ site.status }}</span>
                         </td>
                         <td class="text-surface-500 text-sm">{{ site.lat }}, {{ site.lng }}</td>
+                        <td alignFrozen="right" pFrozenColumn [frozen]="true" class="text-end">
+                            <p-button type="button" label="Detail" icon="pi pi-arrow-right" iconPos="right" [routerLink]="['/locations', site.location_id]" [rounded]="true" [text]="true" />
+                        </td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -118,6 +128,8 @@ export class Locations implements AfterViewInit {
             this.filteredSites.set(
                 this.sites.filter(
                     s =>
+                        s.location_code.toLowerCase().includes(term) ||
+                        String(s.location_id).includes(term) ||
                         s.site.toLowerCase().includes(term) ||
                         s.city.toLowerCase().includes(term) ||
                         s.country.toLowerCase().includes(term) ||
@@ -211,7 +223,7 @@ export class Locations implements AfterViewInit {
             }).addTo(this.map);
 
             marker.bindTooltip(
-                `<strong>${site.site}</strong><br>${site.city}, ${site.country}<br>Capacity: ${site.capacity}<br>Status: ${site.status}`,
+                `<strong>${site.site}</strong><br><span class="font-mono">${site.location_code}</span><br>${site.city}, ${site.country}<br>Capacity: ${site.capacity}<br>Status: ${site.status}`,
                 {
                     direction: 'top',
                     offset: [0, -8]

@@ -6,6 +6,9 @@ import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { Notifications } from './app/pages/notifications/notifications';
 import { Locations } from './app/pages/locations/locations';
+import { LocationDetail } from './app/pages/locations/location-detail';
+import { Stations } from './app/pages/stations/stations';
+import { StationDetail } from './app/pages/stations/station-detail';
 
 export const appRoutes: Routes = [
     {
@@ -38,6 +41,33 @@ export const appRoutes: Routes = [
                     breadcrumb: 'Locations',
                     pageTitle: 'Locations',
                     pageDescription: 'View regional data center sites on a map and in a directory.'
+                }
+            },
+            {
+                path: 'locations/:locationId',
+                component: LocationDetail,
+                data: {
+                    breadcrumb: 'Location detail',
+                    pageTitle: 'Location detail',
+                    pageDescription: 'Site information and coordinates.'
+                }
+            },
+            {
+                path: 'stations',
+                component: Stations,
+                data: {
+                    breadcrumb: 'Stations',
+                    pageTitle: 'Stations',
+                    pageDescription: 'Map and list from demo JSON (dashboardMapItemDataSummaries).'
+                }
+            },
+            {
+                path: 'stations/:locationId',
+                component: StationDetail,
+                data: {
+                    breadcrumb: 'Station detail',
+                    pageTitle: 'Station detail',
+                    pageDescription: 'Station fields from demo JSON.'
                 }
             },
             {

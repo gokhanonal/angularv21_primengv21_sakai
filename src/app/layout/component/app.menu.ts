@@ -50,7 +50,8 @@ export class AppMenu {
                 label: 'Home',
                 items: [
                     { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] },
-                    { label: 'Locations', description: 'Regional site map and directory', icon: 'pi pi-fw pi-map-marker', routerLink: ['/locations'] }
+                    { label: 'Locations', description: 'Regional site map and directory', icon: 'pi pi-fw pi-map-marker', routerLink: ['/locations'] },
+                    { label: 'Stations', description: 'Demo JSON map markers and station grid', icon: 'pi pi-fw pi-bolt', routerLink: ['/stations'] }
                 ]
             },
             {

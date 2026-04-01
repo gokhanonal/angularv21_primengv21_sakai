@@ -1,0 +1,28 @@
+---
+description: Coding Standart in General
+alwaysApply: true
+---
+
+# Coding standards
+
+
+## Change discipline
+
+- Change only what the task requires. Avoid drive-by refactors, unrelated files, and scope creep.
+- Every line in a diff should serve the request. Prefer small, reviewable changes.
+
+## Style and consistency
+
+- Match existing naming, imports, structure, and documentation level in the file you edit.
+- Reuse existing helpers instead of duplicating logic.
+- Prefer clear control flow over deep nesting and one-off special cases.
+
+
+## Static web (`static/*.js`, `static/*.css`, `static/*.html`)
+
+- Keep UI consistent with existing spacing, typography, and color in `static/styles.css`.
+- Avoid inline secrets; call server endpoints that read env on the backend.
+
+## Dependencies
+
+- Prefer well-maintained libraries. Before adding a dependency, confirm it is actively maintained and free of known critical issues.

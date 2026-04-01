@@ -1,0 +1,67 @@
+---
+description: Python 3 style, typing, and error handling for this project
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python 3 standards
+
+Target **Python 3** only. Match the style of the file you edit (imports, naming, framework patterns).
+
+## General
+- Use type hints for new public functions when the project already uses them nearby; stay consistent with the file.
+- Use docstrings for non-obvious behavior; skip redundant comments on obvious code.
+- Handle errors explicitly where failures are expected; avoid bare `except:` or empty `except` blocks.
+
+```python
+# ❌ BAD
+token = "hardcoded-secret"
+
+# ✅ GOOD
+token = os.environ["JIRA_API_TOKEN"]
+```
+
+## Typing and APIs
+
+- Add **type hints** on new or changed public functions and methods (`def foo(...) -> None:`).
+- Prefer **`typing`** (`list[str]`, `dict[str, Any]`) consistent with the file; use `from __future__ import annotations` only if the file already does.
+
+## Strings and I/O
+
+- Prefer **f-strings** over `%` or `str.format` for new code.
+- Use **`pathlib.Path`** for filesystem paths when the module already uses it; otherwise stay consistent with existing `os.path` usage.
+
+## Control flow and errors
+
+- **No bare `except:`** or empty `except` blocks. Catch specific exceptions or re-raise with context.
+- Avoid **mutable default arguments** (`def f(x=[]):`); use `None` and assign inside the function.
+
+```python
+# ❌ BAD
+def load(path=[]):
+    pass
+
+try:
+    data = fetch()
+except:
+    pass
+
+# ✅ GOOD
+def load(path: list[str] | None = None) -> None:
+    path = path or []
+
+try:
+    data = fetch()
+except RequestError as e:
+    logger.warning("fetch failed", exc_info=e)
+    raise
+```
+
+## Docs and logging
+
+- Use **docstrings** for non-obvious behavior; skip noise on trivial helpers.
+- Use the module’s **`logging`** pattern for server/library code; avoid `print` for operational diagnostics unless the script is explicitly CLI-only.
+
+## Compatibility
+
+- Do not use Python 2 idioms: `print` as a statement, `xrange`, implicit relative imports, or `unicode`/`basestring`.
