@@ -17,7 +17,7 @@ Read `.cursor/tasks.md`, determine the next piece of work, and drive it to compl
 4. If any task is not clear, Ask user for them for each
 5. Wait for User confirmation on `.cursor/tasks.md` If you made any changes. If so, Read `.cursor/tasks.md` again to load tasks in case of any user changes on it.
 6. Delegate the task to the appropriate subagent.
-7. A Test step must be added as last step
+7. Unit Test step must be added and delegate to `senior-test-engineer`. Must be run after the development finishs
 8. Approve or reject completed work
 9. After the subagent finishes, validate the result and decide the next step.
 

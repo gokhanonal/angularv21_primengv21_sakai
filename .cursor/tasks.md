@@ -112,3 +112,23 @@
 ### Validation
 
 - [x] `ng build` succeeds.
+
+## Stations map row: KPI column
+
+- [x] Top card uses a **two-column row** on large screens: **map** (`flex-1`) + **KPI panel** (`aside`, fixed max width); stacks on small viewports. Table card remains **full width** below (unchanged).
+- [x] Six small KPI cards with **header / content / footer**; titles exactly as specified (Turkish). Content: **PrimeIcons** illustration + **`current / total`** (values derived from loaded JSON + current filters where noted).
+- [x] Loading: skeleton map + six KPI skeletons in the same row layout.
+
+### Validation
+
+- [x] `ng build` succeeds.
+
+## In stations page, make KPI cards render in two columns
+
+- [x] KPI panel uses **`grid-cols-2`** (loading skeletons + loaded cards); aside widened to **`~30–32rem`** on large screens so two columns fit.
+
+### Validation
+
+- [x] `ng build` succeeds.
+
+## stations page, separate map and guage/kpi divs. And guage/kpi divs background must be transparent

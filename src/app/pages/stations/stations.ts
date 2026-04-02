@@ -19,6 +19,15 @@ import { StationsService } from './stations.service';
 const MARKER_ICON_SIZE: L.PointExpression = [32, 32];
 const MARKER_ICON_ANCHOR: L.PointExpression = [16, 32];
 
+interface StationKpiCard {
+    id: string;
+    title: string;
+    iconClass: string;
+    current: number;
+    total: number;
+    footer: string;
+}
+
 @Component({
     selector: 'app-stations',
     standalone: true,
@@ -51,27 +60,79 @@ const MARKER_ICON_ANCHOR: L.PointExpression = [16, 32];
             </p>
 
             @if (loading()) {
-                <p-skeleton width="100%" height="380px" styleClass="rounded-lg border border-surface-200 dark:border-surface-700" />
+                <div class="flex flex-col lg:flex-row gap-4">
+                    <p-skeleton
+                        width="100%"
+                        height="380px"
+                        styleClass="flex-1 min-w-0 rounded-lg border border-surface-200 dark:border-surface-700"
+                    />
+                    <div class="grid grid-cols-2 gap-3 w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0">
+                        @for (sk of kpiSkeletonIds; track sk) {
+                            <p-skeleton width="100%" height="6.5rem" styleClass="rounded-lg" />
+                        }
+                    </div>
+                </div>
             } @else {
-                <div class="relative rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
-                    @if (!loadError() && uniqueStatuses().length > 0) {
-                        <div
-                            class="absolute top-2 right-2 z-[800] flex flex-wrap gap-2 justify-end items-start max-w-[min(100%-0.75rem,36rem)] pointer-events-none"
-                        >
-                            <div class="flex flex-wrap gap-2 justify-end pointer-events-auto" role="group" aria-label="Filter stations by status">
-                                @for (st of uniqueStatuses(); track st) {
-                                    <p-togglebutton
-                                        [ngModel]="statusFilterOn()[st]"
-                                        (ngModelChange)="onStatusToggle(st, $event)"
-                                        [onLabel]="st"
-                                        [offLabel]="st"
-                                        styleClass="text-sm max-w-[12rem] whitespace-normal h-auto min-h-[2.25rem] py-1.5"
-                                    />
-                                }
-                            </div>
+                <div class="flex flex-col lg:flex-row gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="relative rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                            @if (!loadError() && uniqueStatuses().length > 0) {
+                                <div
+                                    class="absolute top-2 right-2 z-[800] flex flex-wrap gap-2 justify-end items-start max-w-[min(100%-0.75rem,36rem)] pointer-events-none"
+                                >
+                                    <div class="flex flex-wrap gap-2 justify-end pointer-events-auto" role="group" aria-label="Filter stations by status">
+                                        @for (st of uniqueStatuses(); track st) {
+                                            <p-togglebutton
+                                                [ngModel]="statusFilterOn()[st]"
+                                                (ngModelChange)="onStatusToggle(st, $event)"
+                                                [onLabel]="st"
+                                                [offLabel]="st"
+                                                styleClass="text-sm max-w-[12rem] whitespace-normal h-auto min-h-[2.25rem] py-1.5"
+                                            />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            <div #mapContainer class="locations-map rounded-none border-0"></div>
                         </div>
+                    </div>
+                    @if (!loadError()) {
+                    <aside class="w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0">
+                        <div class="grid grid-cols-2 gap-3">
+                            @for (kpi of kpiCards(); track kpi.id) {
+                                <div
+                                    class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex flex-col overflow-hidden shadow-sm"
+                                >
+                                    <div
+                                        class="px-3 py-2 border-b border-surface-200 dark:border-surface-700 font-semibold text-sm leading-snug text-surface-900 dark:text-surface-0"
+                                    >
+                                        {{ kpi.title }}
+                                    </div>
+                                    <div class="px-3 py-3 flex items-center gap-3 flex-1 min-h-[4.5rem]">
+                                        <div
+                                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20"
+                                            aria-hidden="true"
+                                        >
+                                            <i [class]="kpi.iconClass + ' text-2xl text-primary'"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div
+                                                class="text-xl font-bold text-surface-900 dark:text-surface-0 tabular-nums tracking-tight"
+                                            >
+                                                {{ kpi.current }} / {{ kpi.total }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="px-3 py-2 text-xs text-surface-500 dark:text-surface-400 border-t border-surface-200 dark:border-surface-700 leading-snug"
+                                    >
+                                        {{ kpi.footer }}
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </aside>
                     }
-                    <div #mapContainer class="locations-map rounded-none border-0"></div>
                 </div>
             }
         </div>
@@ -182,6 +243,9 @@ export class Stations implements OnInit, AfterViewInit {
     @ViewChild('stationsDt') stationsTable: Table | undefined;
 
     readonly skeletonPlaceholders = [0, 1, 2, 3, 4, 5, 6, 7];
+    readonly kpiSkeletonIds = [0, 1, 2, 3, 4, 5];
+
+    kpiCards = signal<StationKpiCard[]>([]);
 
     allRows: StationRow[] = [];
     tableRows: StationRow[] = [];
@@ -241,6 +305,7 @@ export class Stations implements OnInit, AfterViewInit {
                     this.filteredStations.set([]);
                     this.uniqueStatuses.set([]);
                     this.statusFilterOn.set({});
+                    this.kpiCards.set([]);
                     this.loading.set(false);
                     this.loadError.set('Could not load station data from /demo/locations.json.');
                 }
@@ -259,6 +324,7 @@ export class Stations implements OnInit, AfterViewInit {
             this.lazyTotal = 0;
             this.filteredStations.set([]);
             this.updateMarkers();
+            this.refreshKpis();
             return;
         }
         const filteredSorted = this.applyFiltersSort(meta);
@@ -269,6 +335,7 @@ export class Stations implements OnInit, AfterViewInit {
         const rows = meta.rows ?? 10;
         this.tableRows = filteredSorted.slice(first, first + rows);
         this.updateMarkers();
+        this.refreshKpis();
     }
 
     onGlobalFilter(table: Table, event: Event): void {
@@ -301,6 +368,75 @@ export class Stations implements OnInit, AfterViewInit {
             this.initMap();
             this.reloadLazyFromTable();
         }, 0);
+    }
+
+    private refreshKpis(): void {
+        const rows = this.allRows;
+        const filtered = this.filteredStations();
+        if (!rows.length) {
+            this.kpiCards.set([]);
+            return;
+        }
+        const total = rows.length;
+        const ac = rows.filter((r) => r.isAC).length;
+        const dc = rows.filter((r) => !r.isAC).length;
+        const busyPattern = /bakımda|meşgul|busy|offline|pasif/i;
+        const activeLoc = rows.filter((r) => !busyPattern.test(r.status)).length;
+        const busyLoc = rows.filter((r) => busyPattern.test(r.status)).length;
+        const connectorPool = Math.max(total * 2, 1);
+        const activeConnInView = filtered.filter((r) => !/bakımda/i.test(r.status)).length;
+        const busyConnectors = Math.min(busyLoc * 2, connectorPool);
+
+        this.kpiCards.set([
+            {
+                id: 'ac',
+                title: 'AC Konnektör Sayısı',
+                iconClass: 'pi pi-bolt',
+                current: ac,
+                total,
+                footer: 'AC tipi şarj noktası sayısı (istasyon bazlı).'
+            },
+            {
+                id: 'dc',
+                title: 'DC Konnektör Sayısı',
+                iconClass: 'pi pi-chart-line',
+                current: dc,
+                total,
+                footer: 'DC tipi şarj noktası sayısı (istasyon bazlı).'
+            },
+            {
+                id: 'active-conn',
+                title: 'Aktif Konnektör Sayısı',
+                iconClass: 'pi pi-check-circle',
+                current: Math.min(activeConnInView * 2, connectorPool),
+                total: connectorPool,
+                footer: 'Haritada görünen, bakımda olmayan istasyonlar (tahmini konnektör).'
+            },
+            {
+                id: 'busy-conn',
+                title: 'Meşgul Konnektör Sayısı',
+                iconClass: 'pi pi-clock',
+                current: busyConnectors,
+                total: connectorPool,
+                footer: 'Bakımda / meşgul kabul edilen istasyonlar (tahmini konnektör).'
+            },
+            {
+                id: 'active-loc',
+                title: 'Aktif Lokasyon Sayısı',
+                iconClass: 'pi pi-map-marker',
+                current: activeLoc,
+                total,
+                footer: 'Bakımda veya pasif dışı kabul edilen lokasyonlar.'
+            },
+            {
+                id: 'active-units',
+                title: 'Aktif Şarj Ünitesi Sayısı',
+                iconClass: 'pi pi-car',
+                current: filtered.length,
+                total,
+                footer: 'Filtre ve arama sonrası haritada gösterilen ünite sayısı.'
+            }
+        ]);
     }
 
     private reloadLazyFromTable(): void {
