@@ -8,6 +8,7 @@ export default [
         path: 'documentation',
         component: Documentation,
         data: {
+            breadcrumbKey: 'menu.documentation',
             breadcrumb: 'Documentation',
             pageTitle: 'Documentation',
             pageDescription: 'Review documentation and integration notes.'
@@ -17,6 +18,7 @@ export default [
         path: 'crud',
         component: Crud,
         data: {
+            breadcrumbKey: 'menu.crud',
             breadcrumb: 'Crud',
             pageTitle: 'CRUD',
             pageDescription: 'Manage records with create, update, and delete actions.'
@@ -26,6 +28,7 @@ export default [
         path: 'empty',
         component: Empty,
         data: {
+            breadcrumbKey: 'menu.empty',
             breadcrumb: 'Empty',
             pageTitle: 'Empty Page',
             pageDescription: 'Use this page as a starting point for custom content.'

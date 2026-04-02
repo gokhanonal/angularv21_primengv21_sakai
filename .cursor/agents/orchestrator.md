@@ -15,11 +15,12 @@ Read `.cursor/tasks.md`, determine the next piece of work, and drive it to compl
 2. Identify the **first unchecked task** (`- [ ]`).
 3. Assess whether the task is atomic (implementable in a single focused change). If not, break it into sub-tasks and update `tasks.md` before proceeding.
 4. If any task is not clear, Ask user for them for each
-5. Wait for User confirmation on `.cursor/tasks.md` If you made any changes. If so, Read `.cursor/tasks.md` again to load tasks in case of any user changes on it.
-6. Delegate the task to the appropriate subagent.
-7. Unit Test step must be added and delegate to `senior-test-engineer`. Must be run after the development finishs
-8. Approve or reject completed work
-9. After the subagent finishes, validate the result and decide the next step.
+5. DO NOT start to delegate test WAIT for User confirmation on `.cursor/tasks.md` 
+6. Any changes happend in tasks.md, read `.cursor/tasks.md` again to load tasks in case of any user changes on it.
+7. Delegate the task to the appropriate subagent.
+8. Unit Test step must be added and delegate to `senior-test-engineer`. Must be run after the development finishs
+9. Approve or reject completed work
+10. After the subagent finishes, validate the result and decide the next step.
 
 ## Delegation Rules
 

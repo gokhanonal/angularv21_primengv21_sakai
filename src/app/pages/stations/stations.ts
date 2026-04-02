@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, computed, DestroyRef, effect, ElementRef, OnInit, untracked, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LazyLoadMeta, SortMeta } from 'primeng/api';
 import { StationRow } from './stations.model';
 import { StationsService } from './stations.service';
+import { I18nService } from '@/app/core/i18n/i18n.service';
+import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 
 const MARKER_ICON_SIZE: L.PointExpression = [32, 32];
 const MARKER_ICON_ANCHOR: L.PointExpression = [16, 32];
@@ -42,45 +44,41 @@ interface StationKpiCard {
         MessageModule,
         SkeletonModule,
         ButtonModule,
-        ToggleButtonModule
+        ToggleButtonModule,
+        TranslatePipe
     ],
     template: `
         @if (loadError(); as errMsg) {
             <p-message severity="error" styleClass="mb-4 w-full">{{ errMsg }}</p-message>
         }
 
-        <div class="card mb-4">
-            <div class="font-semibold text-xl mb-1">{{ widgetTitle() }}</div>
-            <p class="text-surface-500 dark:text-surface-400 text-sm mb-4">
-                @if (loading()) {
-                    Loading stations…
-                } @else {
-                    {{ filteredStations().length }} of {{ allRows.length }} stations &middot; map markers use <code class="text-xs">iconUrl</code> from data
-                }
-            </p>
+        <div class="mb-4">
+            <!-- <div class="font-semibold text-xl mb-1">{{ widgetTitle() }}</div> -->
 
-            @if (loading()) {
-                <div class="flex flex-col lg:flex-row gap-4">
-                    <p-skeleton
-                        width="100%"
-                        height="380px"
-                        styleClass="flex-1 min-w-0 rounded-lg border border-surface-200 dark:border-surface-700"
-                    />
-                    <div class="grid grid-cols-2 gap-3 w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0">
+            <div class="flex flex-col lg:flex-row gap-4">
+                @if (loading()) {
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden">
+                        <p-skeleton width="100%" height="380px" styleClass="rounded-none" />
+                    </div>
+                    <div
+                        class="grid grid-cols-2 gap-3 w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0 bg-transparent"
+                    >
                         @for (sk of kpiSkeletonIds; track sk) {
                             <p-skeleton width="100%" height="6.5rem" styleClass="rounded-lg" />
                         }
                     </div>
-                </div>
-            } @else {
-                <div class="flex flex-col lg:flex-row gap-4">
-                    <div class="flex-1 min-w-0">
-                        <div class="relative rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                } @else {
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden">
+                        <div class="relative overflow-hidden">
                             @if (!loadError() && uniqueStatuses().length > 0) {
                                 <div
                                     class="absolute top-2 right-2 z-[800] flex flex-wrap gap-2 justify-end items-start max-w-[min(100%-0.75rem,36rem)] pointer-events-none"
                                 >
-                                    <div class="flex flex-wrap gap-2 justify-end pointer-events-auto" role="group" aria-label="Filter stations by status">
+                                    <div
+                                        class="flex flex-wrap gap-2 justify-end pointer-events-auto"
+                                        role="group"
+                                        [attr.aria-label]="'stations.filterStatusAria' | t"
+                                    >
                                         @for (st of uniqueStatuses(); track st) {
                                             <p-togglebutton
                                                 [ngModel]="statusFilterOn()[st]"
@@ -95,14 +93,23 @@ interface StationKpiCard {
                             }
                             <div #mapContainer class="locations-map rounded-none border-0"></div>
                         </div>
+                        <p class="text-surface-500 dark:text-surface-400 text-sm mb-4">
+                            @if (loading()) {
+                                {{ 'stations.loading' | t }}
+                            } @else {
+                                {{ stationsSubtitle() }}
+                            }
+                        </p>
                     </div>
                     @if (!loadError()) {
-                    <aside class="w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0">
-                        <div class="grid grid-cols-2 gap-3">
-                            @for (kpi of kpiCards(); track kpi.id) {
-                                <div
-                                    class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex flex-col overflow-hidden shadow-sm"
-                                >
+                        <aside
+                            class="w-full lg:w-[min(100%,30rem)] xl:w-[32rem] shrink-0 bg-transparent shadow-none border-0 p-0"
+                        >
+                            <div class="grid grid-cols-2 gap-3 bg-transparent">
+                                @for (kpi of kpiCards(); track kpi.id) {
+                                    <div
+                                        class="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 flex flex-col overflow-hidden shadow-sm"
+                                    >
                                     <div
                                         class="px-3 py-2 border-b border-surface-200 dark:border-surface-700 font-semibold text-sm leading-snug text-surface-900 dark:text-surface-0"
                                     >
@@ -130,11 +137,11 @@ interface StationKpiCard {
                                     </div>
                                 </div>
                             }
-                        </div>
-                    </aside>
+                            </div>
+                        </aside>
                     }
-                </div>
-            }
+                }
+            </div>
         </div>
 
         @if (loading()) {
@@ -149,7 +156,7 @@ interface StationKpiCard {
             </div>
         } @else if (!loadError()) {
             <div class="card">
-                <div class="font-semibold text-xl mb-4">Stations</div>
+                <div class="font-semibold text-xl mb-4">{{ 'stations.tableTitle' | t }}</div>
                 <p-table
                     #stationsDt
                     [value]="tableRows"
@@ -161,7 +168,7 @@ interface StationKpiCard {
                     [totalRecords]="lazyTotal"
                     [globalFilterFields]="['name', 'status', 'location_code', 'location_id']"
                     [showCurrentPageReport]="true"
-                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+                    [currentPageReportTemplate]="pageReportTemplate()"
                     dataKey="stationKey"
                     sortMode="multiple"
                     [scrollable]="true"
@@ -173,7 +180,7 @@ interface StationKpiCard {
                             <button
                                 pButton
                                 type="button"
-                                label="Clear filters"
+                                [label]="'stations.clearFilters' | t"
                                 icon="pi pi-filter-slash"
                                 class="p-button-outlined"
                                 [disabled]="!allRows.length"
@@ -185,7 +192,7 @@ interface StationKpiCard {
                                     pInputText
                                     type="text"
                                     class="w-full"
-                                    placeholder="Search…"
+                                    [placeholder]="'stations.search' | t"
                                     (input)="onGlobalFilter(stationsDt, $event)"
                                 />
                             </p-iconfield>
@@ -195,17 +202,29 @@ interface StationKpiCard {
                         <tr>
                             <th pSortableColumn="name">
                                 <div class="flex justify-between items-center gap-2 flex-wrap">
-                                    <span class="inline-flex items-center gap-1">Name <p-sortIcon field="name" /></span>
-                                    <p-columnFilter type="text" field="name" display="menu" placeholder="Filter by name" />
+                                    <span class="inline-flex items-center gap-1">{{ 'stations.col.name' | t }} <p-sortIcon field="name" /></span>
+                                    <p-columnFilter
+                                        type="text"
+                                        field="name"
+                                        display="menu"
+                                        [placeholder]="'stations.filterByName' | t"
+                                    />
                                 </div>
                             </th>
                             <th pSortableColumn="status">
                                 <div class="flex justify-between items-center gap-2 flex-wrap">
-                                    <span class="inline-flex items-center gap-1">Status <p-sortIcon field="status" /></span>
-                                    <p-columnFilter type="text" field="status" display="menu" placeholder="Filter by status" />
+                                    <span class="inline-flex items-center gap-1">{{ 'stations.col.status' | t }} <p-sortIcon field="status" /></span>
+                                    <p-columnFilter
+                                        type="text"
+                                        field="status"
+                                        display="menu"
+                                        [placeholder]="'stations.filterByStatus' | t"
+                                    />
                                 </div>
                             </th>
-                            <th style="min-width: 7rem" alignFrozen="right" pFrozenColumn [frozen]="true" class="text-end">Detail</th>
+                            <th style="min-width: 7rem" alignFrozen="right" pFrozenColumn [frozen]="true" class="text-end">
+                                {{ 'stations.col.detail' | t }}
+                            </th>
                         </tr>
                     </ng-template>
                     <ng-template #body let-row>
@@ -215,7 +234,7 @@ interface StationKpiCard {
                             <td alignFrozen="right" pFrozenColumn [frozen]="true" class="text-end">
                                 <p-button
                                     type="button"
-                                    label="Detail"
+                                    [label]="'stations.col.detail' | t"
                                     icon="pi pi-arrow-right"
                                     iconPos="right"
                                     [routerLink]="['/stations', row.location_id]"
@@ -265,6 +284,20 @@ export class Stations implements OnInit, AfterViewInit {
 
     private readonly destroyRef = inject(DestroyRef);
     private readonly stationsService = inject(StationsService);
+    private readonly i18n = inject(I18nService);
+
+    readonly pageReportTemplate = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stations.pageReport');
+    });
+
+    readonly stationsSubtitle = computed(() => {
+        this.i18n.lang();
+        return this.i18n.tf('stations.subtitle', {
+            filtered: this.filteredStations().length,
+            total: this.allRows.length
+        });
+    });
 
     constructor() {
         this.destroyRef.onDestroy(() => {
@@ -273,6 +306,14 @@ export class Stations implements OnInit, AfterViewInit {
             this.resizeObserver = null;
             this.map?.remove();
             this.map = undefined;
+        });
+        effect(() => {
+            this.i18n.lang();
+            untracked(() => {
+                if (this.allRows.length > 0) {
+                    this.refreshKpis();
+                }
+            });
         });
     }
 
@@ -307,7 +348,7 @@ export class Stations implements OnInit, AfterViewInit {
                     this.statusFilterOn.set({});
                     this.kpiCards.set([]);
                     this.loading.set(false);
-                    this.loadError.set('Could not load station data from /demo/locations.json.');
+                    this.loadError.set(this.i18n.t('stations.loadError'));
                 }
             });
     }
@@ -390,51 +431,51 @@ export class Stations implements OnInit, AfterViewInit {
         this.kpiCards.set([
             {
                 id: 'ac',
-                title: 'AC Konnektör Sayısı',
+                title: this.i18n.t('kpi.ac.title'),
                 iconClass: 'pi pi-bolt',
                 current: ac,
                 total,
-                footer: 'AC tipi şarj noktası sayısı (istasyon bazlı).'
+                footer: this.i18n.t('kpi.ac.footer')
             },
             {
                 id: 'dc',
-                title: 'DC Konnektör Sayısı',
+                title: this.i18n.t('kpi.dc.title'),
                 iconClass: 'pi pi-chart-line',
                 current: dc,
                 total,
-                footer: 'DC tipi şarj noktası sayısı (istasyon bazlı).'
+                footer: this.i18n.t('kpi.dc.footer')
             },
             {
                 id: 'active-conn',
-                title: 'Aktif Konnektör Sayısı',
+                title: this.i18n.t('kpi.activeConn.title'),
                 iconClass: 'pi pi-check-circle',
                 current: Math.min(activeConnInView * 2, connectorPool),
                 total: connectorPool,
-                footer: 'Haritada görünen, bakımda olmayan istasyonlar (tahmini konnektör).'
+                footer: this.i18n.t('kpi.activeConn.footer')
             },
             {
                 id: 'busy-conn',
-                title: 'Meşgul Konnektör Sayısı',
+                title: this.i18n.t('kpi.busyConn.title'),
                 iconClass: 'pi pi-clock',
                 current: busyConnectors,
                 total: connectorPool,
-                footer: 'Bakımda / meşgul kabul edilen istasyonlar (tahmini konnektör).'
+                footer: this.i18n.t('kpi.busyConn.footer')
             },
             {
                 id: 'active-loc',
-                title: 'Aktif Lokasyon Sayısı',
+                title: this.i18n.t('kpi.activeLoc.title'),
                 iconClass: 'pi pi-map-marker',
                 current: activeLoc,
                 total,
-                footer: 'Bakımda veya pasif dışı kabul edilen lokasyonlar.'
+                footer: this.i18n.t('kpi.activeLoc.footer')
             },
             {
                 id: 'active-units',
-                title: 'Aktif Şarj Ünitesi Sayısı',
+                title: this.i18n.t('kpi.activeUnits.title'),
                 iconClass: 'pi pi-car',
                 current: filtered.length,
                 total,
-                footer: 'Filtre ve arama sonrası haritada gösterilen ünite sayısı.'
+                footer: this.i18n.t('kpi.activeUnits.footer')
             }
         ]);
     }

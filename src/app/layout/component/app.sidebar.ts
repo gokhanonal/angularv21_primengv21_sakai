@@ -4,11 +4,12 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subject, takeUntil } from 'rxjs';
 import { AppMenu } from './app.menu';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [AppMenu, RouterModule, FormsModule],
+    imports: [AppMenu, RouterModule, FormsModule, TranslatePipe],
     template: `
         <div class="layout-sidebar">
             <a class="layout-sidebar-brand" routerLink="/">
@@ -39,8 +40,8 @@ import { LayoutService } from '@/app/layout/service/layout.service';
                     class="layout-menu-search-input"
                     [ngModel]="menuSearchTerm()"
                     (ngModelChange)="menuSearchTerm.set($event)"
-                    placeholder="Search menu items..."
-                    aria-label="Search menu items"
+                    [attr.placeholder]="'sidebar.searchPlaceholder' | t"
+                    [attr.aria-label]="'sidebar.searchAria' | t"
                 />
                 <span class="layout-menu-search-shortcut">⌘K / Ctrl+K</span>
             </div>

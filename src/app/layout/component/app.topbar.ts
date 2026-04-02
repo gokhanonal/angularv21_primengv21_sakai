@@ -1,13 +1,18 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
+import { MenuModule } from 'primeng/menu';
 import { AppConfigurator } from './app.configurator';
+import { AppLanguageSwitcher } from './app.language-switcher';
 import { LayoutService } from '@/app/layout/service/layout.service';
 import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { NotificationService } from '@/app/layout/service/notification.service';
 import { NotificationDetail } from '@/app/pages/notifications/notification-detail';
+import { I18nService } from '@/app/core/i18n/i18n.service';
+import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
+import { UserProfileService } from '@/app/core/profile/user-profile.service';
 
 interface BreadcrumbItem {
     label: string;
@@ -17,7 +22,7 @@ interface BreadcrumbItem {
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [CommonModule, RouterModule, StyleClassModule, AppConfigurator, NotificationDetail],
+    imports: [CommonModule, RouterModule, StyleClassModule, MenuModule, AppConfigurator, AppLanguageSwitcher, NotificationDetail, TranslatePipe],
     template: ` <div class="layout-topbar">
         <div class="topbar-start">
             @if (showMenuButton()) {
@@ -69,7 +74,7 @@ interface BreadcrumbItem {
                 <div class="layout-topbar-menu-content">
                     <button type="button" class="layout-topbar-action">
                         <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
+                        <span>{{ 'topbar.calendar' | t }}</span>
                     </button>
                     <div class="relative">
                         <button
@@ -90,10 +95,10 @@ interface BreadcrumbItem {
                                     <span class="layout-topbar-dot"></span>
                                 }
                             </span>
-                            <span>Messages</span>
+                            <span>{{ 'topbar.messages' | t }}</span>
                         </button>
                         <div class="layout-notification-dropdown hidden">
-                            <div class="layout-notification-dropdown-header">Notifications</div>
+                            <div class="layout-notification-dropdown-header">{{ 'topbar.notifications' | t }}</div>
                             @for (item of notificationService.latestFive(); track item.id) {
                                 <a class="layout-notification-item" [ngClass]="{ 'is-unread': !item.isRead }" (click)="notificationService.openDetail(item)">
                                     <i class="pi" [ngClass]="{
@@ -109,15 +114,29 @@ interface BreadcrumbItem {
                                 </a>
                             }
                             @if (notificationService.latestFive().length === 0) {
-                                <div class="layout-notification-empty">No notifications</div>
+                                <div class="layout-notification-empty">{{ 'topbar.noNotifications' | t }}</div>
                             }
-                            <a routerLink="/notifications" class="layout-notification-show-all">Show All</a>
+                            <a routerLink="/notifications" class="layout-notification-show-all">{{ 'topbar.showAll' | t }}</a>
                         </div>
                     </div>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-user"></i>
-                        <span>Profile</span>
-                    </button>
+                    <app-language-switcher variant="topbar" />
+                    <div class="relative flex shrink-0 items-center justify-center">
+                        <button
+                            type="button"
+                            class="layout-topbar-action layout-topbar-profile-trigger"
+                            (click)="profileMenu.toggle($event)"
+                            [attr.aria-label]="profileMenuAria()"
+                            [attr.title]="'topbar.profile' | t"
+                            [attr.aria-haspopup]="'menu'"
+                        >
+                            @if (userProfile.avatarDataUrl(); as avatarUrl) {
+                                <img [src]="avatarUrl" alt="" class="layout-topbar-profile-img" />
+                            } @else {
+                                <i class="pi pi-user"></i>
+                            }
+                        </button>
+                        <p-menu #profileMenu [popup]="true" [model]="profileMenuItems()" [appendTo]="'body'" styleClass="layout-topbar-profile-menu" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,17 +154,56 @@ export class AppTopbar {
 
     notificationService = inject(NotificationService);
 
-    breadcrumbs = signal<BreadcrumbItem[]>([{ label: 'Home', url: '/' }]);
+    readonly i18n = inject(I18nService);
+
+    readonly userProfile = inject(UserProfileService);
+
+    profileMenuAria = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('topbar.profileMenuAria');
+    });
+
+    profileMenuItems = computed((): MenuItem[] => {
+        this.i18n.lang();
+        return [
+            {
+                label: this.i18n.t('topbar.profileMenu.profile'),
+                icon: 'pi pi-user',
+                command: () => {
+                    void this.router.navigate(['/profile']);
+                }
+            },
+            {
+                label: this.i18n.t('topbar.profileMenu.changePassword'),
+                icon: 'pi pi-key',
+                command: () => {
+                    void this.router.navigate(['/change-password']);
+                }
+            },
+            { separator: true },
+            {
+                label: this.i18n.t('topbar.profileMenu.logout'),
+                icon: 'pi pi-sign-out',
+                command: () => {
+                    this.userProfile.clearMockSessionStorage();
+                    void this.router.navigate(['/auth/login']);
+                }
+            }
+        ];
+    });
+
+    breadcrumbs = signal<BreadcrumbItem[]>([]);
 
     unreadCount = computed(() => this.notificationService.unreadCount());
 
     pageTitle = computed(() => {
+        this.i18n.lang();
         const crumbs = this.breadcrumbs();
         if (crumbs.length > 1) {
             return crumbs[crumbs.length - 1].label;
         }
 
-        return 'Dashboard';
+        return this.i18n.t('menu.dashboard');
     });
 
     showMenuButton = computed(() => {
@@ -164,7 +222,10 @@ export class AppTopbar {
     });
 
     constructor() {
-        this.updateBreadcrumbs();
+        effect(() => {
+            this.i18n.lang();
+            this.updateBreadcrumbs();
+        });
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
             this.updateBreadcrumbs();
         });
@@ -178,7 +239,7 @@ export class AppTopbar {
     }
 
     private updateBreadcrumbs(): void {
-        const crumbs: BreadcrumbItem[] = [{ label: 'Home', url: '/' }];
+        const crumbs: BreadcrumbItem[] = [{ label: this.i18n.t('breadcrumb.home'), url: '/' }];
         let currentRoute = this.activatedRoute.root;
         let currentUrl = '';
         let nextRoute = currentRoute.firstChild;
@@ -194,7 +255,10 @@ export class AppTopbar {
             }
 
             currentUrl = `${currentUrl}/${segment}`;
-            const label = (routeSnapshot?.data?.['breadcrumb'] as string) || this.formatLabel(segment);
+            const data = routeSnapshot.data as Record<string, unknown>;
+            const key = data['breadcrumbKey'] as string | undefined;
+            const raw = data['breadcrumb'] as string | undefined;
+            const label = key ? this.i18n.t(key) : raw ?? this.formatLabel(segment);
 
             crumbs.push({
                 label,

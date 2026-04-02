@@ -10,7 +10,21 @@ import { Product, ProductService } from '@/app/pages/service/product.service';
     selector: 'app-recent-sales-widget',
     imports: [CommonModule, TableModule, ButtonModule, RippleModule],
     template: `<div class="card mb-8!">
-        <div class="font-semibold text-xl mb-4">Recent Sales</div>
+
+        <div class="card-header">
+            <div class="card-heading">
+                <h3 class="card-title">Recent Sales</h3>
+                <p class="card-description">Recent sales of the products</p>
+            </div>
+            <div class="card-actions">
+                <a href="#" class="card-action-link" (click)="$event.preventDefault()">
+                    View More
+                    <i class="pi pi-angle-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="card-header-divider"></div>
+
         <p-table [value]="products()" [paginator]="true" [rows]="5" responsiveLayout="scroll">
             <ng-template #header>
                 <tr>

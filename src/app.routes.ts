@@ -9,6 +9,8 @@ import { Locations } from './app/pages/locations/locations';
 import { LocationDetail } from './app/pages/locations/location-detail';
 import { Stations } from './app/pages/stations/stations';
 import { StationDetail } from './app/pages/stations/station-detail';
+import { Profile } from './app/pages/profile/profile';
+import { ChangePassword } from './app/pages/profile/change-password';
 
 export const appRoutes: Routes = [
     {
@@ -19,16 +21,22 @@ export const appRoutes: Routes = [
                 path: '',
                 component: Dashboard,
                 data: {
+                    breadcrumbKey: 'breadcrumb.ecommerce',
                     breadcrumb: 'eCommerce',
                     pageTitle: 'eCommerce Dashboard',
-                    pageDescription: 'TailAdmin demo ile ayni icerik duzeni (ornek veri).'
+                    pageDescription: 'Sales and revenue data.'
                 }
             },
-            { path: 'uikit', loadChildren: () => import('./app/pages/uikit/uikit.routes') },
+            {
+                path: 'uikit',
+                loadChildren: () => import('./app/pages/uikit/uikit.routes'),
+                data: { breadcrumbKey: 'menu.uiComponents', breadcrumb: 'UI Components' }
+            },
             {
                 path: 'documentation',
                 component: Documentation,
                 data: {
+                    breadcrumbKey: 'breadcrumb.documentation',
                     breadcrumb: 'Documentation',
                     pageTitle: 'Documentation',
                     pageDescription: 'Read setup, usage, and component details.'
@@ -38,6 +46,7 @@ export const appRoutes: Routes = [
                 path: 'locations',
                 component: Locations,
                 data: {
+                    breadcrumbKey: 'breadcrumb.locations',
                     breadcrumb: 'Locations',
                     pageTitle: 'Locations',
                     pageDescription: 'View regional data center sites on a map and in a directory.'
@@ -47,6 +56,7 @@ export const appRoutes: Routes = [
                 path: 'locations/:locationId',
                 component: LocationDetail,
                 data: {
+                    breadcrumbKey: 'breadcrumb.locationDetail',
                     breadcrumb: 'Location detail',
                     pageTitle: 'Location detail',
                     pageDescription: 'Site information and coordinates.'
@@ -56,15 +66,17 @@ export const appRoutes: Routes = [
                 path: 'stations',
                 component: Stations,
                 data: {
+                    breadcrumbKey: 'breadcrumb.stations',
                     breadcrumb: 'Stations',
                     pageTitle: 'Stations',
-                    pageDescription: 'Map and list from demo JSON (dashboardMapItemDataSummaries).'
+                    pageDescription: 'Map and list from demo JSON'
                 }
             },
             {
                 path: 'stations/:locationId',
                 component: StationDetail,
                 data: {
+                    breadcrumbKey: 'breadcrumb.stationDetail',
                     breadcrumb: 'Station detail',
                     pageTitle: 'Station detail',
                     pageDescription: 'Station fields from demo JSON.'
@@ -74,12 +86,37 @@ export const appRoutes: Routes = [
                 path: 'notifications',
                 component: Notifications,
                 data: {
+                    breadcrumbKey: 'breadcrumb.notifications',
                     breadcrumb: 'Notifications',
                     pageTitle: 'Notifications',
                     pageDescription: 'View and manage all your notifications.'
                 }
             },
-            { path: 'pages', loadChildren: () => import('./app/pages/pages.routes') }
+            {
+                path: 'profile',
+                component: Profile,
+                data: {
+                    breadcrumbKey: 'breadcrumb.profile',
+                    breadcrumb: 'Profile',
+                    pageTitle: 'Profile',
+                    pageDescription: 'View and update your profile and photo.'
+                }
+            },
+            {
+                path: 'change-password',
+                component: ChangePassword,
+                data: {
+                    breadcrumbKey: 'breadcrumb.changePassword',
+                    breadcrumb: 'Change password',
+                    pageTitle: 'Change password',
+                    pageDescription: 'Update your account password.'
+                }
+            },
+            {
+                path: 'pages',
+                loadChildren: () => import('./app/pages/pages.routes'),
+                data: { breadcrumbKey: 'menu.pages', breadcrumb: 'Pages' }
+            }
         ]
     },
     { path: 'landing', component: Landing },
