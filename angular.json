@@ -39,7 +39,7 @@
                             "node_modules/leaflet/dist/leaflet.css"
                         ],
                         "scripts": [],
-                        "allowedCommonJsDependencies": ["leaflet"]
+                        "allowedCommonJsDependencies": ["leaflet", "exceljs"]
                     },
                     "configurations": {
                         "production": {

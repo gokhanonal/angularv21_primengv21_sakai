@@ -382,6 +382,7 @@
 - **Clip-only** vs **visible ring** (blocking for final acceptance).
 - **Ring color/token** if not `surface-border`.
 
+
 ## Change `/stations` to `/dashboard-stations` (routing and links)
 
 **Goal:** Rename the Stations feature’s **public URL segment** from `/stations` to `/dashboard-stations` and update **all in-app navigation** (routes, sidebar menu, grid detail links, back links) so users reach the same screens via the new paths.
@@ -643,8 +644,49 @@ This item previously was a **single line** with a typo (“relavent”) and no A
 ### Validation
 
 - [x] **`ng build`** succeeds.
-- [ ] **Manual:** each export format; WYSIWYG with column hide; selection + filter; keyboard; tooltip/screen reader spot-check; Clear filters + search.
+- [x] **Manual:** each export format; WYSIWYG with column hide; selection + filter; keyboard; tooltip/screen reader spot-check; Clear filters + search.
 
 ### Source
 
 Original one-liner: *“CSV, HTML and Excel buttons must be under a splitbutton. this button has only icon not label”* — expanded from **senior-business-analyst** brief (2026-04-03).
+
+## Station Management detail: header row — name, status, Back to list
+
+**Source (original one-liner):** *In `/station-management/<id>` page populate station's status just next to Station Name. And put 'Back to list' button to the right of the same row* — expanded from **senior-business-analyst** brief.
+
+### Problem / user story
+
+As an **admin** viewing **Station Management → station detail** (`/station-management/:stationId`), I need the **station name**, **operational status**, and a **clear way back to the list** on **one header row** so I can **confirm which record I am viewing** without scanning the body or returning to the grid to infer status.
+
+### Functional requirements
+
+1. **Layout:** A single primary header row containing, in reading order: **station name** (dominant), **status** immediately **next to** the name (same row on typical desktop widths), and **“Back to list”** aligned to the **right** of that row (or end of the row in LTR).
+2. **Status source of truth:** Derive display status from the **same rules as the list grid**: `isDeleted === true` → **Deleted** (danger-style badge); else `isActive === true` → **Active** (success); else **Inactive** (warn). Use the same visual treatment as grid badges where practical (e.g. `p-tag` severities).
+3. **i18n:** Labels for **“Back to list”** and **Deleted / Active / Inactive** must use the **same translation keys** as the list/grid if they already exist; otherwise add keys in all supported app languages (**en, tr, fr, de** per project norm).
+4. **Responsive:** On **narrow viewports**, the row may **wrap** or **stack** (name + status first, back control on a second line or full-width) without hiding status or the back action; touch targets remain usable.
+5. **Empty / error:** If the station **is not loaded** (loading), show a sensible loading state in the header area. If load **fails** or station **not found**, show an explicit message and still provide **Back to list** (or equivalent navigation to `/station-management`).
+
+### Acceptance criteria
+
+- [ ] Header shows **station name** and **status badge** on one logical row for desktop-width layout; **Back to list** is on the **right** of that row (LTR).
+- [ ] Status matches grid logic for **Deleted / Active / Inactive** from `isDeleted` / `isActive` for the loaded station.
+- [ ] **Back to list** navigates to **`/station-management`** and is **translated** in all supported languages.
+- [ ] Narrow viewport: layout **does not** omit status or back navigation; no horizontal overflow that breaks the shell.
+- [ ] Loading and **not found / error** states show appropriate copy and **Back to list** remains available where specified.
+
+### Out of scope
+
+Tab bodies (Station Info, Charging Units, etc.), **API** or data model changes, grid/export behavior, **PNG** export, SplitButton keyboard paths, and **new** status values beyond the three badge states above.
+
+### Open questions
+
+- *(Nice-to-know)* If the **name is very long**, should the name **truncate with ellipsis** while status + back stay visible, or may the name wrap across lines?
+
+### Relationship to existing backlog
+
+Aligns with **Station Management** routing (`/station-management/:stationId`, `stationId` = row `id`) and the **documented status badge rules** in the Station Management section (`isDeleted` / `isActive`); complements the existing **Back to list → `/station-management`** expectation from the detail page backlog.
+
+### Validation
+
+- [ ] **`ng build`** succeeds.
+- [ ] **Manual:** desktop header layout; status vs grid for same row; back navigation; narrow viewport; loading / not found / error paths.

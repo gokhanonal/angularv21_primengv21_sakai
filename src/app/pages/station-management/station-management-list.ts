@@ -87,9 +87,12 @@ function escapeHtmlText(value: string): string {
         }
 
         <div class="card">
-            <h3 class="card-title mb-1">{{ 'stationMgmt.pageTitle' | t }}</h3>
-            <p class="text-surface-500 dark:text-surface-400 text-sm mb-4">{{ 'stationMgmt.subtitle' | t }}</p>
-
+            @if (pageTitleText()) {
+                <h3 class="card-title mb-1">{{ pageTitleText() }}</h3>
+            }
+            @if (subtitleText()) {
+                <p class="text-surface-500 dark:text-surface-400 text-sm mb-4">{{ subtitleText() }}</p>
+            }
             @if (loading()) {
                 <p-skeleton width="100%" height="2.5rem" styleClass="mb-3" />
                 <p-skeleton width="100%" height="22rem" />
@@ -388,6 +391,17 @@ export class StationManagementList implements OnInit {
             key: d.key,
             label: this.i18n.t(d.labelKey)
         }));
+    });
+
+    /** Shown only when the translation is non-empty (keys default to '' in translations). */
+    readonly pageTitleText = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stationMgmt.pageTitle').trim();
+    });
+
+    readonly subtitleText = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stationMgmt.subtitle').trim();
     });
 
     /** Main segment = Excel; menu = CSV + HTML (BA default — no duplicate Excel in menu). */

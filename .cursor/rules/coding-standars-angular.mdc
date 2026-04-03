@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+- IF a grid has 'Clear Filter' button and full text search box, then clear search box value when 'Clear Filter' button click

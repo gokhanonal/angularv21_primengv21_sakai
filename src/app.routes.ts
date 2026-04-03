@@ -7,10 +7,12 @@ import { Notfound } from './app/pages/notfound/notfound';
 import { Notifications } from './app/pages/notifications/notifications';
 import { Locations } from './app/pages/locations/locations';
 import { LocationDetail } from './app/pages/locations/location-detail';
-import { Stations } from './app/pages/stations/stations';
-import { StationDetail } from './app/pages/stations/station-detail';
+import { Stations } from './app/pages/dashboard-stations/stations';
+import { StationDetail } from './app/pages/dashboard-stations/station-detail';
 import { Profile } from './app/pages/profile/profile';
 import { ChangePassword } from './app/pages/profile/change-password';
+import { StationManagementList } from './app/pages/station-management/station-management-list';
+import { StationManagementDetail } from './app/pages/station-management/station-management-detail';
 
 export const appRoutes: Routes = [
     {
@@ -83,16 +85,6 @@ export const appRoutes: Routes = [
                 }
             },
             {
-                path: 'stations/:locationId',
-                redirectTo: 'dashboard-stations/:locationId',
-                pathMatch: 'full'
-            },
-            {
-                path: 'stations',
-                redirectTo: 'dashboard-stations',
-                pathMatch: 'full'
-            },
-            {
                 path: 'notifications',
                 component: Notifications,
                 data: {
@@ -120,6 +112,26 @@ export const appRoutes: Routes = [
                     breadcrumb: 'Change password',
                     pageTitle: 'Change password',
                     pageDescription: 'Update your account password.'
+                }
+            },
+            {
+                path: 'station-management',
+                component: StationManagementList,
+                data: {
+                    breadcrumbKey: 'breadcrumb.stationManagement',
+                    breadcrumb: 'Station Management',
+                    pageTitle: 'Station Management',
+                    pageDescription: 'Manage station information including pricing, commissions, and users.'
+                }
+            },
+            {
+                path: 'station-management/:stationId',
+                component: StationManagementDetail,
+                data: {
+                    breadcrumbKey: 'breadcrumb.stationManagementDetail',
+                    breadcrumb: 'Station details',
+                    pageTitle: '',
+                    pageDescription: ''
                 }
             },
             {

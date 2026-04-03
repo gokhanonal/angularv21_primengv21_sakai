@@ -86,6 +86,19 @@ export class AppMenu {
                 ]
             },
             {
+                label: t('menu.station'),
+                icon: 'pi pi-fw pi-building-columns',
+                path: '/station-management',
+                items: [
+                    {
+                        label: t('menu.stationManagement'),
+                        description: t('menu.stationManagementDesc'),
+                        icon: 'pi pi-fw pi-shop',
+                        routerLink: ['/station-management']
+                    }
+                ]
+            },
+            {
                 label: t('menu.uiComponents'),
                 items: [
                     { label: t('menu.formLayout'), description: t('menu.formLayoutDesc'), icon: 'pi pi-fw pi-id-card', routerLink: ['/uikit/formlayout'] },
