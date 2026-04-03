@@ -449,8 +449,202 @@
 ### Validation
 
 - [x] **`ng build`** succeeds.
-- [ ] **Manual:** sidebar → list; grid detail → detail; back → list; optional old-URL behavior per AC §7. *(Owner smoke-test.)*
+- [x] **Manual:** sidebar → list; grid detail → detail; back → list; optional old-URL behavior per AC §7. *(Owner smoke-test.)*
 
 ### Backlog hygiene note
 
 This item previously was a **single line** with a typo (“relavent”) and no AC or redirect policy — routing renames often miss links or bookmarks. After implementation, consider whether older `tasks.md` sections that reference `/stations` should stay as history or be updated for accuracy.
+
+
+## STATION → Station Management (grid + detail tabs)
+
+**Source intent (original ask):** Root menu **STATION** (like HOME / UI COMPONENTS) with sub-item **Station Management** opening a page (backlog typo **`/statins`** — **do not ship**). **PrimeNG Table:** global search, refresh, Excel-style advanced filter + **Clear filter**, column selector, column reorder, **multi-column sort**, multi-row checkbox selection, export **CSV / Excel / HTML / PNG**. **Actions** column (Edit, View, Delete) **frozen on the right**. Data from **`public/demo/stations.json`**. **Freeze left:** `stationInfoId`, `name`. **Status** as **badges**. **View** opens detail **`/stations/<station_id>`** — **see routing decision below** (collision with existing redirects). Detail page: tabbed **Station Info**, **Charging Units**, **Working Hours**, **Pricing**, **Commissions**, **Station Users**, **Accounting**.
+
+**Goal:** Admin-style station directory UI on demo JSON, without breaking **`/stations` → `/dashboard-stations`** legacy redirects.
+
+### Routing & URL policy (BA-documented)
+
+- **Collision:** Today **`/stations`** and **`/stations/:locationId`** **`redirectTo`** **`/dashboard-stations`** / **`/dashboard-stations/:locationId`** (`app.routes.ts`). A **new** feature cannot use **`/stations/:id`** for this module **without removing or narrowing those redirects**.
+- **Canonical (proposal):** List **`/station-management`**, detail **`/station-management/:stationId`** where **`stationId` = row `id`** from JSON (numeric string in URL). **`stationInfoId`** shown as “Station Code” in grid but URL key is **`id`** unless product chooses otherwise.
+- [x] **`/statins`:** not registered; no marketing/bookmarks on typo path.
+
+### Product decisions (defaults until stakeholder overrides)
+
+**Resolved (BA defaults, 2026-04-03):** same as implementation handoff — proceed without blocking.
+
+- [x] **Legacy redirects:** Keep **`/stations` → `dashboard-stations`** unchanged (map/demo feature).
+- [x] **Status badges:** **`isDeleted: true` → “Deleted”** (`p-tag` **danger**); else **`isActive: true` → “Active”** (**success**) / **`false` → “Inactive”** (**warn**).
+- [x] **Edit / Delete:** **Mock** — **Edit** → **`p-dialog` placeholder** (no persist); **Delete** → confirm → **in-memory** remove + **toast** (“not persisted” / demo scope).
+- [x] **Export row scope (v1):** **Filtered + sorted visible rows** (current table view). **Enhancement:** export **selection-only** when multi-select exists.
+- [x] **PNG export:** **Deferred in v1** (CSV/HTML/Excel follow in backlog).
+- [x] **Company → logo:** Allowlist normalized **`companyName`** → **`src/assets/branding/logo/`** (e.g. **Sharz** / `Sharz.Net` → `sharz.svg`; **Ovolt** → `ovolt.png` when asset exists); **fallback:** **`companyName`** text.
+- [x] **Column / filter UI state:** **Session-only** (no **localStorage** for column/filter prefs in v1).
+- [x] **`/statins`:** **Not registered** (typo path not shipped).
+
+### Column mapping (grid)
+
+| JSON field | Column header (i18n key target) |
+|------------|----------------------------------|
+| `stationInfoId` | Station Code |
+| `name` | Station Name |
+| `address` | Address |
+| `phone` | Phone |
+| `cityName` | City |
+| `districtName` | District Name |
+| `companyName` | Company (logo or text) |
+| `resellerName` | Reseller |
+| `isRoaming` | Roaming? (Yes/No / —) |
+| `unitCode` | Unit Code |
+| *(derived)* | Status (badges) |
+
+- [x] **Freeze left:** `stationInfoId`, `name` (`frozenColumns` / PrimeNG pattern used elsewhere in repo).
+- [x] **Freeze right:** **Actions** only.
+
+### Functional breakdown
+
+1. **Menu (`app.menu.ts`) + i18n**
+   - [x] New root item **STATION** (`menu.station` — align naming with `translations.ts` **en, tr, fr, de**).
+   - [x] Child **Station Management** → **`routerLink: ['/station-management']`** (+ description for sidebar search if used).
+
+2. **Routes (`app.routes.ts`)**
+   - [x] **`station-management`** → list component; **`station-management/:stationId`** → detail component; **`data.breadcrumbKey`** (+ page title/description keys).
+
+3. **Data layer**
+   - [x] Service or component `HttpClient.get('/demo/stations.json')`, parse **`{ success, data }`**, handle **`success: false` / missing `data` / HTTP error** with user-visible error + retry.
+   - [x] **Refresh** button re-fetches JSON; **row selection cleared** on reload (see implementation).
+
+4. **List page — `p-table`**
+   - [x] **Global search** input filtering across displayed column values (or defined subset).
+   - [x] **Multi-sort** (`sortMode="multiple"`, Shift+click) consistent with **Stations** page pattern.
+   - [x] **Excel-style filters:** per-column **`p-columnFilter`** (text/menu) where appropriate + **Clear filters** control clearing table filter state + advanced filter model.
+   - [x] **Column show/hide** (column selector UI — e.g. multiselect of column keys).
+   - [x] **Column reorder** (PrimeNG `reorderableColumns` + persistence per product decision).
+   - [x] **Multi-select** rows with header checkbox + row checkboxes; **on any filter/search/sort change → clear selection** (see **Resolved — export & selection**).
+   - [x] **Pagination or virtual scroll** so **~476** rows stay usable (match project norms).
+
+5. **Export**
+   - **Scope:** **WYSIWYG** — only **visible** columns and current cell values (see **Resolved — export & selection** below). Clearing row selection on/after export is **allowed** if convenient for UX.
+   - [x] **CSV** and **HTML** export (client-generated download).
+   - [x] **Excel:** real **`.xlsx`** (OOXML) via **`exceljs`** (`^4.4.0`); dynamic import → lazy chunk; MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` — opens in Excel without HTML-in-`.xls` warning.
+   - [ ] **PNG** — **deferred v1** per product decision (see **Product decisions** above).
+
+6. **Actions column**
+   - [x] **View** → **`routerLink`** **`['/station-management', row.id]`** (or agreed param).
+   - [x] **Edit** / **Delete** → mock behaviors per **Product decisions**.
+
+7. **Detail page**
+   - [x] Resolve station by **`id`** from loaded list or small refetch; **404 / not found** state if invalid id.
+   - [x] **`p-tabs`**: **Station Info** | **Charging Units** | **Working Hours** | **Pricing** | **Commissions** | **Station Users** | **Accounting** — **placeholder** copy in each tab until APIs exist.
+   - [x] **Back to list** → **`/station-management`**.
+
+8. **Branding**
+   - [x] Company cell: `<img>` when logo map hits file; else text; **max-height** constraint; **alt** from company name.
+
+### Non-functional / quality bar
+
+- [ ] **A11y:** sortable/filterable table headers, button labels on Actions, focus order in dialogs.
+  - *Partial so far:* localized `aria-label` on View/Edit/Delete; PrimeNG sort/filter on headers; dialog focus order tightened — extend if audit finds gaps.
+- [x] **i18n:** menu, breadcrumbs, column headers, tab titles, empty/error strings (**en, tr, fr, de**).
+
+### Validation
+
+- [x] **`ng build`** succeeds.
+- [ ] **Manual:** menu → list; filters/sort/selection; export files open; View → detail tabs; invalid id; **confirm `/stations` still redirects to dashboard-stations** (legacy).
+
+### Out of scope (unless new task)
+
+- Real CRUD API, authz, audit, tab content from backend, pixel-perfect Excel screenshot parity, replacing **dashboard-stations** map feature.
+
+### Open questions (resolve if defaults rejected)
+
+- *(None blocking.)* Stakeholder confirmations are recorded below.
+
+### Confirmed (stakeholder)
+
+- [x] **URL param:** **`id`** is canonical in routes; **`stationInfoId`** is **display-only** in the grid (**confirmed**).
+- [x] **PNG export:** **Not in v1** — treat as closed unless a **new** task explicitly reopens it (same intent as “defer / forget for now”).
+
+### Resolved — export & selection (stakeholder)
+
+- [x] **Export column scope:** **WYSIWYG** — export includes only **visible** columns and the **values currently shown** in the grid (hidden columns excluded; matches on-screen data).
+- [x] **Multi-select when filters change:** **Clear selection** whenever global search, column filters, or sort change the visible row set (do not keep selected ids across filtered views).
+- [x] **Export vs selection:** **Discarding row selection** when the user runs export (e.g. clear after download, or ignore selection for v1 export) is **acceptable** — v1 remains **visible-rows** export; **selection-only** export stays an optional enhancement later.
+
+## Clear filters + global search
+
+- [x] **Station Management:** “Clear filters” also clears the caption **full-text search** input (same pattern to reuse on other grids with a global search box).
+
+## bug-fix: Excel warned that `.xls` format and extension did not match (HTML-as-Excel)
+
+**Cause:** Earlier export wrote **HTML** with a **`.xls`** extension; Excel flags that as unsafe / mismatched.
+
+**Fix (2026-04-03):** Replaced with **real `.xlsx`** using **`exceljs`**; filename `station-management-YYYY-MM-DD-HHmmss.xlsx`. **`angular.json`** lists **`exceljs`** under **`allowedCommonJsDependencies`** (library is CommonJS).
+
+- [x] **Resolved** — re-test: download **Excel** on Station Management → open in Microsoft Excel → no “format and extension don’t match” dialog.
+
+## Station Management: export SplitButton (icon-only trigger)
+
+**Goal:** Replace the three separate **CSV / Excel / HTML** toolbar buttons with **one** compact **PrimeNG `p-splitButton`** (or equivalent): **icon-only** main trigger + dropdown, while **export semantics stay unchanged** (WYSIWYG, selection rules, lazy `.xlsx` via `exceljs`).
+
+### UX specification
+
+| Element | Spec |
+|--------|------|
+| **Control** | **SplitButton**: default segment + menu. **No visible text** on the main trigger — **icon only** (e.g. `pi pi-file-export` / `pi pi-download`, match app patterns). |
+| **Default (main) action** | **Recommended:** **Excel (`.xlsx`)** — admin report expectation, existing `exceljs` path. **Override:** **CSV** if product prioritizes instant export without lazy chunk. |
+| **Dropdown** | **CSV** and **HTML** (and optionally **Excel** again for parity — prefer **no duplicate** if main = Excel). Labels: existing **`stationMgmt.export.*`** keys (**en, tr, fr, de**). |
+| **Tooltip** | Short phrase on hover/focus for the icon trigger — **i18n** (same meaning as accessible name). |
+| **A11y** | **`aria-label`** (or equivalent) on icon-only trigger — **i18n-backed**. Menu: `aria-haspopup` / keyboard per PrimeNG; do not rely on icon alone for screen readers. |
+| **Placement** | Same **caption toolbar** region as today’s export buttons (with Refresh, Clear filters, global search, column picker). |
+
+### Functional requirements
+
+1. [x] **FR-1:** **CSV**, **HTML**, and **Excel** all **reachable** from the split control (main and/or menu).
+2. [x] **FR-2:** **WYSIWYG** unchanged — only **visible** columns and **values shown**; hidden columns excluded (**Resolved — export & selection**).
+3. [x] **FR-3:** **Selection** rules unchanged — clear on filter/search/sort; clearing on/after export **acceptable**; v1 = **visible-rows** export only.
+4. [x] **FR-4:** **Excel** remains real **`.xlsx`** (`exceljs`, lazy chunk, MIME/filename as today).
+5. [x] **FR-5:** **i18n** for tooltip, `aria-label`, and menu labels (**en, tr, fr, de**); add generic key(s) e.g. `stationMgmt.export.splitAria` / `stationMgmt.export.splitTooltip` if needed.
+6. [x] **FR-6:** **Keyboard:** Tab to control; **Enter/Space** on default export; open menu and pick format without mouse.
+7. [x] **FR-7:** **Touch:** adequate hit targets; menu **`appendTo`** if needed to avoid clipping.
+8. [x] **FR-8:** **Clear filters** still clears **global search** — no regression (**Clear filters + global search** task).
+9. [x] **FR-9:** **Empty / error** states: disabled and/or messaging consistent with current behavior; **Excel** failure → existing error **toast**.
+
+### Acceptance criteria
+
+- [x] One **icon-only** split export control; **no** three standalone CSV/HTML/Excel buttons on Station Management list.
+- [x] Primary action = **agreed** format (default **Excel** unless product overrides); file content matches **pre-change** behavior for that format.
+- [x] Menu exposes **all three** formats; each format matches prior behavior.
+- [x] **WYSIWYG:** hide column → excluded from export; show → included.
+- [x] Filter / search / sort change → **selection clears** as today.
+- [x] Tooltip + **`aria-label`** localized **en, tr, fr, de** and consistent.
+- [ ] **Keyboard-only** path works for **each** export format. *(Owner smoke-test.)*
+- [x] **`ng build`** succeeds; Excel opens **without** format/extension mismatch warning (existing bug-fix AC).
+- [x] **PNG** not added or implied.
+
+### Edge cases and risks
+
+- **Excel lazy load:** First click may wait on `exceljs` chunk — avoid **double downloads**; optional busy/disabled on control during write.
+- **Concurrent clicks:** Prefer single active export or idempotent handling.
+- **RTL:** If enabled app-wide, verify caret/menu alignment for Station Management caption.
+- **Narrow width:** Caption toolbar does not break usability.
+
+### Out of scope
+
+- **PNG** export (still deferred v1).
+- **Selection-only** export (future enhancement).
+- Backend APIs, real persistence, authz, new export column logic beyond **WYSIWYG**.
+- **`/dashboard-stations`** and legacy **`/stations`** redirects.
+- **Detail page** unless it shares the same toolbar (this task = **list** page).
+
+### Open questions (defaults if unanswered)
+
+**Resolved (implementation, 2026-04-03):** **Main = Excel (`.xlsx`)**; menu = **CSV** + **HTML** only (no duplicate Excel item).
+
+### Validation
+
+- [x] **`ng build`** succeeds.
+- [ ] **Manual:** each export format; WYSIWYG with column hide; selection + filter; keyboard; tooltip/screen reader spot-check; Clear filters + search.
+
+### Source
+
+Original one-liner: *“CSV, HTML and Excel buttons must be under a splitbutton. this button has only icon not label”* — expanded from **senior-business-analyst** brief (2026-04-03).
