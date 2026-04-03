@@ -50,9 +50,9 @@ interface BreadcrumbItem {
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
-                <div class="relative">
+                <div class="relative">  
                     <button
-                        class="layout-topbar-action layout-topbar-action-highlight"
+                        class="layout-topbar-action layout-topbar-action-palette"
                         pStyleClass="@next"
                         enterFromClass="hidden"
                         enterActiveClass="animate-scalein"
@@ -60,7 +60,7 @@ interface BreadcrumbItem {
                         leaveActiveClass="animate-fadeout"
                         [hideOnOutsideClick]="true"
                     >
-                        <i class="pi pi-palette"></i>
+                        <i class="pi pi-palette"></i>   
                     </button>
                     <app-configurator />
                 </div>

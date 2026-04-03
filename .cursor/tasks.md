@@ -689,4 +689,5 @@ Aligns with **Station Management** routing (`/station-management/:stationId`, `s
 ### Validation
 
 - [x] **`ng build`** succeeds.
-- [ ] **Manual:** desktop header layout; status vs grid for same row; back navigation; narrow viewport; loading / not found / error paths. *(Owner smoke.)*
+- [x] **Manual:** desktop header layout; status vs grid for same row; back navigation; narrow viewport; loading / not found / error paths. *(Owner smoke.)*
+

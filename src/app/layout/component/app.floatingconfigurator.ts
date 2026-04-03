@@ -14,7 +14,7 @@ import {CommonModule} from "@angular/common";
             <app-language-switcher variant="floating" />
             <p-button type="button" (onClick)="toggleDarkMode()" [rounded]="true" [icon]="isDarkTheme() ? 'pi pi-moon' : 'pi pi-sun'" severity="secondary" />
             <div class="relative">
-                <p-button icon="pi pi-palette" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true" type="button" rounded />
+                <p-button icon="pi pi-palette" styleClass="layout-floating-palette-button" severity="secondary" pStyleClass="@next" enterFromClass="hidden" enterActiveClass="animate-scalein" leaveToClass="hidden" leaveActiveClass="animate-fadeout" [hideOnOutsideClick]="true" type="button" rounded />
                 <app-configurator />
             </div>
         </div>
