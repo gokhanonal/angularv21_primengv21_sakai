@@ -1,9 +1,20 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import {
+    Component,
+    DestroyRef,
+    Injector,
+    OnInit,
+    Renderer2,
+    ViewChild,
+    afterNextRender,
+    computed,
+    inject,
+    signal
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
+import { ConfirmationService, FilterMatchMode, FilterService, MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
@@ -14,12 +25,19 @@ import { MessageModule } from 'primeng/message';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Table, TableModule } from 'primeng/table';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { stationManagementCompanyLogoSrc } from './station-management-logo';
+import {
+    applyScrollableColumnWidthsToTable,
+    computeScrollableColumnWidthsPx,
+    createCanvasTextMeasureFn,
+    type StationMgmtColumnWidthSample
+} from './station-management-column-autosize';
 import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
 
@@ -37,6 +55,27 @@ const STATION_MGMT_DATA_COLUMN_OPTIONS: readonly { key: string; labelKey: string
 ];
 
 const STATION_MGMT_DATA_COLUMN_KEYS: string[] = STATION_MGMT_DATA_COLUMN_OPTIONS.map((o) => o.key);
+
+/** Default column order (status first to match prior grid). */
+const STATION_MGMT_DEFAULT_DATA_COLUMN_ORDER: string[] = [
+    'status',
+    'address',
+    'phone',
+    'cityName',
+    'districtName',
+    'companyName',
+    'resellerName',
+    'isRoaming',
+    'unitCode'
+];
+
+const ROAMING_FILTER_MATCH_MODE = 'stationMgmtRoamingTri';
+
+export interface StationMgmtScrollableColumnDef {
+    field: string;
+    header: string;
+    minWidth: string;
+}
 
 function escapeCsvCell(value: string): string {
     const s = value ?? '';
@@ -73,6 +112,7 @@ function escapeHtmlText(value: string): string {
         ConfirmDialogModule,
         DialogModule,
         MultiSelectModule,
+        SelectModule,
         SplitButtonModule,
         TranslatePipe
     ],
@@ -93,29 +133,140 @@ function escapeHtmlText(value: string): string {
             @if (subtitleText()) {
                 <p class="text-surface-500 dark:text-surface-400 text-sm mb-4">{{ subtitleText() }}</p>
             }
-            @if (loading()) {
-                <p-skeleton width="100%" height="2.5rem" styleClass="mb-3" />
-                <p-skeleton width="100%" height="22rem" />
+            @if (loading() && !mgmt.loadError()) {
+                <div
+                    role="status"
+                    aria-live="polite"
+                    [attr.aria-busy]="true"
+                    [attr.aria-label]="'stationMgmt.loading' | t"
+                    class="station-mgmt-grid-skeleton"
+                >
+                    <div
+                        class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center justify-between mb-3"
+                    >
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <p-skeleton width="5.25rem" height="2.5rem" />
+                            <p-skeleton width="6.5rem" height="2.5rem" />
+                            <p-skeleton width="3rem" height="2.5rem" />
+                            <p-skeleton width="10rem" height="2.5rem" />
+                        </div>
+                        <div class="w-full sm:w-auto sm:ml-auto sm:min-w-[12rem] sm:max-w-[24rem]">
+                            <p-skeleton width="100%" height="2.5rem" />
+                        </div>
+                    </div>
+                    <div
+                        class="rounded-md border border-surface-200 dark:border-surface-700 overflow-x-auto"
+                        style="min-width: 75rem"
+                    >
+                        <div class="flex flex-col" style="height: 480px">
+                            <div
+                                class="flex shrink-0 items-stretch border-b border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800"
+                                style="min-height: 3.25rem"
+                            >
+                                <div
+                                    class="flex items-center justify-center shrink-0 border-e border-surface-200 dark:border-surface-700 px-1"
+                                    style="width: 3rem; min-width: 3rem"
+                                >
+                                    <p-skeleton shape="circle" size="1.25rem" />
+                                </div>
+                                <div
+                                    class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                    style="min-width: 9rem"
+                                >
+                                    <p-skeleton width="85%" height="1rem" />
+                                </div>
+                                <div
+                                    class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                    style="min-width: 14rem"
+                                >
+                                    <p-skeleton width="70%" height="1rem" />
+                                </div>
+                                @for (col of scrollableColumns; track col.field) {
+                                    <div
+                                        class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                        [style.min-width]="col.minWidth"
+                                    >
+                                        <p-skeleton width="78%" height="1rem" />
+                                    </div>
+                                }
+                                <div
+                                    class="flex items-center justify-end gap-1 px-2 shrink-0"
+                                    style="min-width: 13rem"
+                                >
+                                    <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                    <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                    <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                </div>
+                            </div>
+                            <div
+                                class="flex flex-col flex-1 min-h-0 divide-y divide-surface-200 dark:divide-surface-700"
+                            >
+                                @for (row of skeletonBodyRowIndexes; track row) {
+                                    <div class="flex flex-1 items-stretch min-h-0">
+                                        <div
+                                            class="flex items-center justify-center shrink-0 border-e border-surface-200 dark:border-surface-700 px-1"
+                                            style="width: 3rem; min-width: 3rem"
+                                        >
+                                            <p-skeleton shape="circle" size="1.25rem" />
+                                        </div>
+                                        <div
+                                            class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                            style="min-width: 9rem"
+                                        >
+                                            <p-skeleton width="60%" height="0.875rem" />
+                                        </div>
+                                        <div
+                                            class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                            style="min-width: 14rem"
+                                        >
+                                            <p-skeleton width="90%" height="0.875rem" />
+                                        </div>
+                                        @for (col of scrollableColumns; track col.field) {
+                                            <div
+                                                class="flex items-center px-2 border-e border-surface-200 dark:border-surface-700 shrink-0"
+                                                [style.min-width]="col.minWidth"
+                                            >
+                                                <p-skeleton width="88%" height="0.875rem" />
+                                            </div>
+                                        }
+                                        <div
+                                            class="flex items-center justify-end gap-1 px-2 shrink-0"
+                                            style="min-width: 13rem"
+                                        >
+                                            <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                            <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                            <p-skeleton width="2rem" height="2rem" borderRadius="9999px" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
             } @else if (!mgmt.loadError()) {
                 <p-table
                     #dt
                     [value]="mgmt.rows()"
+                    [columns]="scrollableColumns"
                     dataKey="id"
                     selectionMode="multiple"
                     [(selection)]="selectedRows"
                     [scrollable]="true"
                     scrollHeight="480px"
                     [tableStyle]="{ 'min-width': '75rem' }"
+                    [resizableColumns]="true"
+                    columnResizeMode="expand"
                     [reorderableColumns]="true"
                     sortMode="multiple"
                     [paginator]="true"
-                    [rows]="10"
+                    [rows]="tableRowsPerPage"
                     [rowsPerPageOptions]="[10, 25, 50]"
                     [showCurrentPageReport]="true"
                     [currentPageReportTemplate]="'stationMgmt.pageReport' | t"
                     [globalFilterFields]="globalFilterFieldsForTable"
                     (onSort)="clearTableSelection()"
                     (onFilter)="clearTableSelection()"
+                    (onColReorder)="onColReorder($event)"
                 >
                     <ng-template #caption>
                         <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center justify-between">
@@ -175,7 +326,7 @@ function escapeHtmlText(value: string): string {
                             </p-iconfield>
                         </div>
                     </ng-template>
-                    <ng-template #header>
+                    <ng-template #header let-columns>
                         <tr>
                             <th
                                 pFrozenColumn
@@ -187,7 +338,18 @@ function escapeHtmlText(value: string): string {
                                 <p-tableHeaderCheckbox [ariaLabel]="'stationMgmt.selection.selectAll' | t" />
                             </th>
                             <th pSortableColumn="stationInfoId" pFrozenColumn alignFrozen="left" style="min-width: 9rem">
-                                <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.stationCode' | t }} <p-sortIcon field="stationInfoId" /></span>
+                                <div class="flex justify-between items-center gap-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1"
+                                        >{{ 'stationMgmt.col.stationCode' | t }} <p-sortIcon field="stationInfoId" /></span
+                                    >
+                                    <p-columnFilter
+                                        type="text"
+                                        field="stationInfoId"
+                                        display="menu"
+                                        matchMode="contains"
+                                        [placeholder]="'stationMgmt.filterByStationCode' | t"
+                                    />
+                                </div>
                             </th>
                             <th pSortableColumn="name" pFrozenColumn alignFrozen="left" style="min-width: 14rem">
                                 <div class="flex justify-between items-center gap-2 flex-wrap">
@@ -196,115 +358,124 @@ function escapeHtmlText(value: string): string {
                                         type="text"
                                         field="name"
                                         display="menu"
+                                        matchMode="contains"
                                         [placeholder]="'stationMgmt.filterByName' | t"
                                     />
                                 </div>
                             </th>
-                            @if (isDataColumnVisible('status')) {
-                                <th style="min-width: 9rem">{{ 'stationMgmt.col.status' | t }}</th>
-                            }
-                            @if (isDataColumnVisible('address')) {
-                                <th pSortableColumn="address" style="min-width: 12rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.address' | t }} <p-sortIcon field="address" /></span>
-                                </th>
-                            }
-                            @if (isDataColumnVisible('phone')) {
-                                <th pSortableColumn="phone" style="min-width: 10rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.phone' | t }} <p-sortIcon field="phone" /></span>
-                                </th>
-                            }
-                            @if (isDataColumnVisible('cityName')) {
-                                <th pSortableColumn="cityName" style="min-width: 9rem">
+                            @for (col of columns; track col.field) {
+                                <th
+                                    pReorderableColumn
+                                    pResizableColumn
+                                    [pSortableColumn]="col.field"
+                                    [style.min-width]="col.minWidth"
+                                    scope="col"
+                                >
                                     <div class="flex justify-between items-center gap-2 flex-wrap">
-                                        <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.city' | t }} <p-sortIcon field="cityName" /></span>
-                                        <p-columnFilter
-                                            type="text"
-                                            field="cityName"
-                                            display="menu"
-                                            [placeholder]="'stationMgmt.filterByCity' | t"
-                                        />
+                                        <span class="inline-flex items-center gap-1">{{ col.header }} <p-sortIcon [field]="col.field" /></span>
+                                        @switch (col.field) {
+                                            @case ('statusCategory') {
+                                                <p-columnFilter
+                                                    type="text"
+                                                    field="statusCategory"
+                                                    display="menu"
+                                                    [matchMode]="FilterMatchMode.IN"
+                                                    [showMatchModes]="false"
+                                                    [placeholder]="'stationMgmt.filterByStatus' | t"
+                                                >
+                                                    <ng-template pTemplate="filter" let-value let-filterCallback="filterCallback">
+                                                        <p-multiSelect
+                                                            [options]="statusFilterOptions()"
+                                                            [ngModel]="value"
+                                                            (ngModelChange)="filterCallback($event)"
+                                                            optionLabel="label"
+                                                            optionValue="value"
+                                                            [placeholder]="'stationMgmt.filterByStatus' | t"
+                                                            display="chip"
+                                                            [filter]="false"
+                                                            styleClass="w-full min-w-[12rem]"
+                                                            appendTo="body"
+                                                        />
+                                                    </ng-template>
+                                                </p-columnFilter>
+                                            }
+                                            @case ('isRoaming') {
+                                                <p-columnFilter
+                                                    type="text"
+                                                    field="isRoaming"
+                                                    display="menu"
+                                                    [matchMode]="roamingFilterMatchMode"
+                                                    [showMatchModes]="false"
+                                                    [placeholder]="'stationMgmt.filterByRoaming' | t"
+                                                >
+                                                    <ng-template pTemplate="filter" let-value let-filterCallback="filterCallback">
+                                                        <p-select
+                                                            [options]="roamingFilterOptions()"
+                                                            [ngModel]="value === undefined || value === null ? 'any' : roamingFilterSelectValue(value)"
+                                                            (ngModelChange)="filterCallback($event === 'any' ? null : $event)"
+                                                            optionLabel="label"
+                                                            optionValue="value"
+                                                            [placeholder]="'stationMgmt.filterByRoaming' | t"
+                                                            styleClass="w-full min-w-[10rem]"
+                                                            appendTo="body"
+                                                        />
+                                                    </ng-template>
+                                                </p-columnFilter>
+                                            }
+                                            @default {
+                                                <p-columnFilter
+                                                    type="text"
+                                                    [field]="col.field"
+                                                    display="menu"
+                                                    matchMode="contains"
+                                                    [placeholder]="filterPlaceholder(col.field) | t"
+                                                />
+                                            }
+                                        }
                                     </div>
                                 </th>
                             }
-                            @if (isDataColumnVisible('districtName')) {
-                                <th pSortableColumn="districtName" style="min-width: 10rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.district' | t }} <p-sortIcon field="districtName" /></span>
-                                </th>
-                            }
-                            @if (isDataColumnVisible('companyName')) {
-                                <th style="min-width: 10rem">{{ 'stationMgmt.col.company' | t }}</th>
-                            }
-                            @if (isDataColumnVisible('resellerName')) {
-                                <th pSortableColumn="resellerName" style="min-width: 9rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.reseller' | t }} <p-sortIcon field="resellerName" /></span>
-                                </th>
-                            }
-                            @if (isDataColumnVisible('isRoaming')) {
-                                <th pSortableColumn="isRoaming" style="min-width: 8rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.roaming' | t }} <p-sortIcon field="isRoaming" /></span>
-                                </th>
-                            }
-                            @if (isDataColumnVisible('unitCode')) {
-                                <th pSortableColumn="unitCode" style="min-width: 9rem">
-                                    <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.unitCode' | t }} <p-sortIcon field="unitCode" /></span>
-                                </th>
-                            }
-                            <th
-                                pFrozenColumn
-                                alignFrozen="right"
-                                style="min-width: 13rem"
-                                class="text-end"
-                            >
+                            <th pFrozenColumn alignFrozen="right" style="min-width: 13rem" class="text-end" scope="col">
                                 {{ 'stationMgmt.col.actions' | t }}
                             </th>
                         </tr>
                     </ng-template>
-                    <ng-template #body let-row>
+                    <ng-template #body let-row let-columns="columns">
                         <tr>
                             <td pFrozenColumn alignFrozen="left" class="text-center" style="width: 3rem">
                                 <p-tableCheckbox [value]="row" [ariaLabel]="rowSelectAriaLabel(row)" />
                             </td>
                             <td pFrozenColumn alignFrozen="left" class="font-mono text-sm">{{ row.stationInfoId }}</td>
                             <td pFrozenColumn alignFrozen="left" class="font-medium">{{ row.name }}</td>
-                            @if (isDataColumnVisible('status')) {
+                            @for (col of columns; track col.field) {
                                 <td>
-                                    <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)" />
-                                </td>
-                            }
-                            @if (isDataColumnVisible('address')) {
-                                <td>{{ row.address }}</td>
-                            }
-                            @if (isDataColumnVisible('phone')) {
-                                <td>{{ row.phone }}</td>
-                            }
-                            @if (isDataColumnVisible('cityName')) {
-                                <td>{{ row.cityName }}</td>
-                            }
-                            @if (isDataColumnVisible('districtName')) {
-                                <td>{{ row.districtName }}</td>
-                            }
-                            @if (isDataColumnVisible('companyName')) {
-                                <td>
-                                    @if (showCompanyLogo(row)) {
-                                        <img
-                                            [src]="companyLogoUrl(row)!"
-                                            [alt]="row.companyName"
-                                            class="max-h-8 w-auto object-contain"
-                                            (error)="onLogoBroken(row)"
-                                        />
-                                    } @else {
-                                        <span>{{ row.companyName }}</span>
+                                    @switch (col.field) {
+                                        @case ('statusCategory') {
+                                            <p-tag [value]="statusLabel(row)" [severity]="statusSeverity(row)" />
+                                        }
+                                        @case ('companyName') {
+                                            @if (showCompanyLogo(row)) {
+                                                <img
+                                                    [src]="companyLogoUrl(row)!"
+                                                    [alt]="row.companyName"
+                                                    class="max-h-8 w-auto object-contain"
+                                                    (error)="onLogoBroken(row)"
+                                                />
+                                            } @else {
+                                                <span>{{ row.companyName }}</span>
+                                            }
+                                        }
+                                        @case ('isRoaming') {
+                                            {{ roamingLabel(row) }}
+                                        }
+                                        @case ('unitCode') {
+                                            {{ row.unitCode?.trim() ? row.unitCode : '—' }}
+                                        }
+                                        @default {
+                                            {{ rowDataCell(row, col.field) }}
+                                        }
                                     }
                                 </td>
-                            }
-                            @if (isDataColumnVisible('resellerName')) {
-                                <td>{{ row.resellerName }}</td>
-                            }
-                            @if (isDataColumnVisible('isRoaming')) {
-                                <td>{{ roamingLabel(row) }}</td>
-                            }
-                            @if (isDataColumnVisible('unitCode')) {
-                                <td>{{ row.unitCode?.trim() ? row.unitCode : '—' }}</td>
                             }
                             <td pFrozenColumn alignFrozen="right" class="text-end whitespace-nowrap">
                                 <p-button
@@ -369,13 +540,26 @@ function escapeHtmlText(value: string): string {
 export class StationManagementList implements OnInit {
     @ViewChild('dt') tableRef: Table | undefined;
 
+    readonly FilterMatchMode = FilterMatchMode;
+    readonly roamingFilterMatchMode = ROAMING_FILTER_MATCH_MODE;
+
     readonly mgmt = inject(StationManagementService);
     private readonly confirm = inject(ConfirmationService);
     private readonly messages = inject(MessageService);
     private readonly i18n = inject(I18nService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly filterService = inject(FilterService);
+    private readonly injector = inject(Injector);
+    private readonly renderer = inject(Renderer2);
+    private readonly measureCellText = createCanvasTextMeasureFn();
 
     readonly loading = signal(true);
+
+    /** Matches `[rows]` on `p-table` (samples first page for auto column widths). */
+    readonly tableRowsPerPage = 10;
+
+    /** Skeleton table body row placeholders. */
+    readonly skeletonBodyRowIndexes: readonly number[] = [0, 1, 2, 3, 4, 5];
     readonly editVisible = signal(false);
     readonly editRow = signal<StationManagementRow | null>(null);
 
@@ -385,6 +569,12 @@ export class StationManagementList implements OnInit {
     /** Keys of optional (non-frozen) data columns currently shown in the grid. */
     visibleDataColumnKeys: string[] = [...STATION_MGMT_DATA_COLUMN_KEYS];
 
+    /** Master order of all optional data keys (visible + hidden); drives export order and picker visibility order subset. */
+    dataColumnOrder: string[] = [...STATION_MGMT_DEFAULT_DATA_COLUMN_ORDER];
+
+    /** Visible scrollable columns passed to PrimeNG (mutated in place on reorder). */
+    scrollableColumns: StationMgmtScrollableColumnDef[] = [];
+
     readonly columnPickerOptions = computed(() => {
         this.i18n.lang();
         return STATION_MGMT_DATA_COLUMN_OPTIONS.map((d) => ({
@@ -392,6 +582,41 @@ export class StationManagementList implements OnInit {
             label: this.i18n.t(d.labelKey)
         }));
     });
+
+    readonly statusFilterOptions = computed(() => {
+        this.i18n.lang();
+        return [
+            { label: this.i18n.t('stationMgmt.status.deleted'), value: 'deleted' as const },
+            { label: this.i18n.t('stationMgmt.status.active'), value: 'active' as const },
+            { label: this.i18n.t('stationMgmt.status.inactive'), value: 'inactive' as const }
+        ];
+    });
+
+    roamingFilterOptions(): { label: string; value: string }[] {
+        return [
+            { label: this.i18n.t('stationMgmt.filter.roaming.any'), value: 'any' },
+            { label: this.i18n.t('stationMgmt.filter.roaming.yes'), value: 'yes' },
+            { label: this.i18n.t('stationMgmt.filter.roaming.no'), value: 'no' }
+        ];
+    }
+
+    constructor() {
+        this.filterService.register(ROAMING_FILTER_MATCH_MODE, (value: boolean, filter: unknown): boolean => {
+            if (filter === null || filter === undefined || filter === '') {
+                return true;
+            }
+            if (filter === 'any') {
+                return true;
+            }
+            if (filter === 'yes' || filter === true) {
+                return value === true;
+            }
+            if (filter === 'no' || filter === false) {
+                return value === false;
+            }
+            return true;
+        });
+    }
 
     /** Shown only when the translation is non-empty (keys default to '' in translations). */
     readonly pageTitleText = computed(() => {
@@ -442,6 +667,7 @@ export class StationManagementList implements OnInit {
     }
 
     ngOnInit(): void {
+        this.rebuildScrollableColumns();
         this.reload();
     }
 
@@ -454,9 +680,70 @@ export class StationManagementList implements OnInit {
                 next: () => {
                     this.clearTableSelection();
                     this.loading.set(false);
+                    this.scheduleApplyScrollableColumnAutoWidths();
                 },
                 error: () => this.loading.set(false)
             });
+    }
+
+    /**
+     * First-load / refresh auto column widths use the current i18n headers and first page of rows.
+     * Language changes take effect on the next successful reload (no live re-measure).
+     */
+    private scheduleApplyScrollableColumnAutoWidths(): void {
+        afterNextRender(
+            () => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        this.applyScrollableColumnAutoWidthsToDom();
+                    });
+                });
+            },
+            { injector: this.injector }
+        );
+    }
+
+    private applyScrollableColumnAutoWidthsToDom(): void {
+        if (this.loading() || this.mgmt.loadError()) {
+            return;
+        }
+        const samples = this.buildColumnWidthSamples();
+        const widths = computeScrollableColumnWidthsPx(samples, this.measureCellText);
+        const tableEl = this.tableRef?.tableViewChild?.nativeElement as HTMLTableElement | undefined;
+        if (!tableEl || this.scrollableColumns.length === 0) {
+            return;
+        }
+        const fields = this.scrollableColumns.map((c) => c.field);
+        applyScrollableColumnWidthsToTable(tableEl, fields, widths, 3, (el, prop, value) => {
+            this.renderer.setStyle(el, prop, value);
+        });
+    }
+
+    private buildColumnWidthSamples(): StationMgmtColumnWidthSample[] {
+        const rows = this.mgmt.rows();
+        const sampleRows =
+            rows.length === 0 ? [] : rows.slice(0, Math.min(this.tableRowsPerPage, rows.length));
+        return this.scrollableColumns.map((col) => ({
+            field: col.field,
+            minWidthCss: col.minWidth,
+            headerText: col.header,
+            cellTexts: sampleRows.map((row) => this.cellSampleTextForAutoWidth(row, col.field))
+        }));
+    }
+
+    private cellSampleTextForAutoWidth(row: StationManagementRow, field: string): string {
+        switch (field) {
+            case 'statusCategory':
+                return this.statusLabel(row);
+            case 'isRoaming':
+                return this.roamingLabel(row);
+            case 'companyName':
+                return row.companyName;
+            case 'unitCode':
+                return row.unitCode?.trim() ? row.unitCode : '—';
+            default:
+                return this.rowDataCell(row, field);
+        }
     }
 
     onGlobalFilter(table: Table, event: Event): void {
@@ -476,8 +763,34 @@ export class StationManagementList implements OnInit {
         this.selectedRows = [];
     }
 
-    isDataColumnVisible(key: string): boolean {
-        return this.visibleDataColumnKeys.includes(key);
+    onColReorder(event: { columns?: { field: string }[] }): void {
+        const cols = event.columns;
+        if (!cols?.length) {
+            return;
+        }
+        const newOrder = cols.map((c) => this.dataKeyFromScrollableField(c.field));
+        this.mergeDataColumnOrderFromVisibleReorder(newOrder);
+        this.scheduleApplyScrollableColumnAutoWidths();
+    }
+
+    private mergeDataColumnOrderFromVisibleReorder(newVisibleOrder: string[]): void {
+        const vis = new Set(this.visibleDataColumnKeys);
+        const out: string[] = [];
+        let inserted = false;
+        for (const k of this.dataColumnOrder) {
+            if (vis.has(k)) {
+                if (!inserted) {
+                    out.push(...newVisibleOrder);
+                    inserted = true;
+                }
+            } else {
+                out.push(k);
+            }
+        }
+        if (!inserted) {
+            out.push(...newVisibleOrder);
+        }
+        this.dataColumnOrder = out;
     }
 
     onVisibleDataColumnsChange(table: Table, keys: string[] | null | undefined): void {
@@ -489,8 +802,96 @@ export class StationManagementList implements OnInit {
                 delete table.filters[k];
             }
         }
+        if (!visible.has('status') && table.filters?.['statusCategory']) {
+            delete table.filters['statusCategory'];
+        }
+        if (!visible.has('isRoaming') && table.filters?.['isRoaming']) {
+            delete table.filters['isRoaming'];
+        }
+        this.rebuildScrollableColumns();
         this.clearTableSelection();
         table._filter();
+        this.scheduleApplyScrollableColumnAutoWidths();
+    }
+
+    private rebuildScrollableColumns(): void {
+        this.scrollableColumns = this.dataColumnOrder
+            .filter((k) => this.visibleDataColumnKeys.includes(k))
+            .map((k) => ({
+                field: this.fieldForDataColumnKey(k),
+                header: this.i18n.t(this.labelKeyForDataColumnKey(k)),
+                minWidth: this.minWidthForDataColumnKey(k)
+            }));
+    }
+
+    private fieldForDataColumnKey(key: string): string {
+        return key === 'status' ? 'statusCategory' : key;
+    }
+
+    private dataKeyFromScrollableField(field: string): string {
+        return field === 'statusCategory' ? 'status' : field;
+    }
+
+    private labelKeyForDataColumnKey(key: string): string {
+        const opt = STATION_MGMT_DATA_COLUMN_OPTIONS.find((o) => o.key === key);
+        return opt?.labelKey ?? 'stationMgmt.col.status';
+    }
+
+    private minWidthForDataColumnKey(key: string): string {
+        switch (key) {
+            case 'status':
+                return '9rem';
+            case 'address':
+                return '12rem';
+            case 'phone':
+                return '10rem';
+            case 'cityName':
+                return '9rem';
+            case 'districtName':
+                return '10rem';
+            case 'companyName':
+                return '10rem';
+            case 'resellerName':
+                return '9rem';
+            case 'isRoaming':
+                return '8rem';
+            case 'unitCode':
+                return '9rem';
+            default:
+                return '9rem';
+        }
+    }
+
+    filterPlaceholder(field: string): string {
+        const map: Record<string, string> = {
+            address: 'stationMgmt.filterByAddress',
+            phone: 'stationMgmt.filterByPhone',
+            cityName: 'stationMgmt.filterByCity',
+            districtName: 'stationMgmt.filterByDistrict',
+            companyName: 'stationMgmt.filterByCompany',
+            resellerName: 'stationMgmt.filterByReseller',
+            unitCode: 'stationMgmt.filterByUnitCode'
+        };
+        return map[field] ?? 'stationMgmt.search';
+    }
+
+    /** Map current filter value to p-select model (null/undefined → handled in template as 'any'). */
+    roamingFilterSelectValue(v: unknown): string {
+        if (v === true || v === 'yes') {
+            return 'yes';
+        }
+        if (v === false || v === 'no') {
+            return 'no';
+        }
+        return 'any';
+    }
+
+    rowDataCell(row: StationManagementRow, field: string): string {
+        const v = (row as unknown as Record<string, unknown>)[field];
+        if (v === null || v === undefined) {
+            return '';
+        }
+        return String(v);
     }
 
     rowSelectAriaLabel(row: StationManagementRow): string {
@@ -628,9 +1029,12 @@ export class StationManagementList implements OnInit {
             { field: 'stationInfoId', headerLabel: this.i18n.t('stationMgmt.col.stationCode') },
             { field: 'name', headerLabel: this.i18n.t('stationMgmt.col.name') }
         ];
-        for (const opt of STATION_MGMT_DATA_COLUMN_OPTIONS) {
-            if (this.visibleDataColumnKeys.includes(opt.key)) {
-                cols.push({ field: opt.key, headerLabel: this.i18n.t(opt.labelKey) });
+        for (const key of this.dataColumnOrder) {
+            if (this.visibleDataColumnKeys.includes(key)) {
+                const opt = STATION_MGMT_DATA_COLUMN_OPTIONS.find((o) => o.key === key);
+                if (opt) {
+                    cols.push({ field: opt.key, headerLabel: this.i18n.t(opt.labelKey) });
+                }
             }
         }
         return { cols, rows };

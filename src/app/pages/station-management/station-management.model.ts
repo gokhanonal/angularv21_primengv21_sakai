@@ -13,4 +13,6 @@ export interface StationManagementRow {
     unitCode: string;
     isActive: boolean;
     isDeleted: boolean;
+    /** Derived for grid filter/sort (`deleted` | `active` | `inactive`). */
+    statusCategory: 'deleted' | 'active' | 'inactive';
 }

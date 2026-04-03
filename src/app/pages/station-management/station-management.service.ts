@@ -56,6 +56,13 @@ export class StationManagementService {
         const o = raw as Record<string, unknown>;
         const id = toInt(o['id'], toInt(o['stationInfoId'], index + 1));
         const stationInfoId = toInt(o['stationInfoId'], id);
+        const isDeleted = Boolean(o['isDeleted']);
+        const isActive = Boolean(o['isActive']);
+        const statusCategory: 'deleted' | 'active' | 'inactive' = isDeleted
+            ? 'deleted'
+            : isActive
+              ? 'active'
+              : 'inactive';
         return {
             id,
             stationInfoId,
@@ -68,8 +75,9 @@ export class StationManagementService {
             resellerName: String(o['resellerName'] ?? ''),
             isRoaming: Boolean(o['isRoaming']),
             unitCode: String(o['unitCode'] ?? ''),
-            isActive: Boolean(o['isActive']),
-            isDeleted: Boolean(o['isDeleted'])
+            isActive,
+            isDeleted,
+            statusCategory
         };
     }
 }
