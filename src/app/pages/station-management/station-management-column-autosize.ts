@@ -76,13 +76,18 @@ export function computeScrollableColumnWidthsPx(
     headerExtraPx: number = STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
     cellPaddingPx: number = STATION_MGMT_AUTO_SIZE_CELL_PADDING_PX,
     remPx: number = STATION_MGMT_AUTO_SIZE_REM_PX,
-    headerTextMeasureScale: number = STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE
+    headerTextMeasureScale: number = STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+    /** Per-field `<th>` `scrollWidth` from the live table; `> 0` replaces canvas header estimate for that column. */
+    headerDomWidths?: Readonly<Record<string, number>>
 ): Record<string, number> {
     const out: Record<string, number> = {};
     for (const col of columns) {
         const minPx = parseCssLengthToPx(col.minWidthCss, remPx);
         const headerTextPx = measure(col.headerText, HEADER_FONT);
-        const headerBasedPx = Math.ceil(headerTextPx * headerTextMeasureScale) + headerExtraPx;
+        const canvasHeaderBasedPx = Math.ceil(headerTextPx * headerTextMeasureScale) + headerExtraPx;
+        const domPx = headerDomWidths?.[col.field];
+        const headerBasedPx =
+            typeof domPx === 'number' && domPx > 0 ? domPx : canvasHeaderBasedPx;
         let maxContent = headerBasedPx;
         for (const cell of col.cellTexts) {
             maxContent = Math.max(maxContent, measure(cell, BODY_FONT) + cellPaddingPx);
@@ -100,6 +105,34 @@ export function computeScrollableColumnWidthsPx(
 }
 
 export const STATION_MGMT_FROZEN_LEFT_TH_COUNT = 3;
+
+/**
+ * Reads each scrollable header cell's `scrollWidth` (full header chrome: label, sort, filter, padding).
+ * Returns `{}` if thead structure does not match `scrollableFieldsInOrder` (same guard as {@link applyScrollableColumnWidthsToTable}).
+ */
+export function readScrollableHeaderDomWidthsPx(
+    table: HTMLTableElement,
+    scrollableFieldsInOrder: readonly string[],
+    frozenLeftThCount: number = STATION_MGMT_FROZEN_LEFT_TH_COUNT
+): Record<string, number> {
+    const headerTr = table.querySelector(':scope > thead > tr');
+    if (!headerTr) {
+        return {};
+    }
+    const ths = headerTr.querySelectorAll<HTMLTableCellElement>(':scope > th');
+    const expectedTh = frozenLeftThCount + scrollableFieldsInOrder.length + 1;
+    if (ths.length !== expectedTh) {
+        return {};
+    }
+    const out: Record<string, number> = {};
+    scrollableFieldsInOrder.forEach((field, i) => {
+        const th = ths.item(frozenLeftThCount + i);
+        if (th) {
+            out[field] = th.scrollWidth;
+        }
+    });
+    return out;
+}
 
 /**
  * Applies `width` (px) to scrollable header/body cells by column index. Skips rows that do not match full column count.

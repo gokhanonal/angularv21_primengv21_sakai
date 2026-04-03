@@ -2,9 +2,11 @@ import {
     applyScrollableColumnWidthsToTable,
     computeScrollableColumnWidthsPx,
     parseCssLengthToPx,
+    readScrollableHeaderDomWidthsPx,
     STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
     STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
-    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX
+    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+    STATION_MGMT_FROZEN_LEFT_TH_COUNT
 } from './station-management-column-autosize';
 
 describe('station-management-column-autosize', () => {
@@ -71,6 +73,90 @@ describe('station-management-column-autosize', () => {
             expect(computeScrollableColumnWidthsPx(cols, measure, STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX)['x']).toBe(
                 Math.min(expectedFloor, STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX)
             );
+        });
+
+        it('uses headerDomWidths as header floor when larger than canvas header and cell content', () => {
+            const measure = (text: string): number => (text?.length ?? 0) * 5;
+            const cols = [{ field: 'f', minWidthCss: '1rem', headerText: 'S', cellTexts: ['a', 'b'] }];
+            const canvasHeaderFloor =
+                Math.ceil(measure('S') * STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE) +
+                STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX;
+            const cellMax = Math.max(measure('a'), measure('b')) + 28;
+            expect(cellMax).toBeLessThan(canvasHeaderFloor);
+            const domHeaderPx = 260;
+            expect(domHeaderPx).toBeGreaterThan(canvasHeaderFloor);
+            expect(
+                computeScrollableColumnWidthsPx(
+                    cols,
+                    measure,
+                    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+                    STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
+                    28,
+                    16,
+                    STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+                    { f: domHeaderPx }
+                )['f']
+            ).toBe(Math.min(domHeaderPx, STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX));
+        });
+
+        it('falls back to canvas header floor when headerDomWidths field is 0', () => {
+            const measure = (text: string): number => (text?.length ?? 0) * 7;
+            const headerText = 'H'.repeat(12);
+            const cols = [{ field: 'g', minWidthCss: '1rem', headerText, cellTexts: ['x'] }];
+            expect(
+                computeScrollableColumnWidthsPx(
+                    cols,
+                    measure,
+                    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+                    STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
+                    28,
+                    16,
+                    STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+                    { g: 0 }
+                )['g']
+            ).toBe(
+                computeScrollableColumnWidthsPx(cols, measure, STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX)['g']
+            );
+        });
+
+        it('falls back to canvas header floor when headerDomWidths omits the field', () => {
+            const measure = (text: string): number => (text?.length ?? 0) * 7;
+            const headerText = 'LongHeaderText';
+            const cols = [{ field: 'h', minWidthCss: '1rem', headerText, cellTexts: ['y'] }];
+            expect(
+                computeScrollableColumnWidthsPx(
+                    cols,
+                    measure,
+                    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+                    STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
+                    28,
+                    16,
+                    STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+                    { otherColumn: 999 }
+                )['h']
+            ).toBe(computeScrollableColumnWidthsPx(cols, measure, STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX)['h']);
+        });
+    });
+
+    describe('readScrollableHeaderDomWidthsPx', () => {
+        it('maps each scrollable field to its th scrollWidth when thead matches expected layout', () => {
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead><tr>
+                    <th></th><th></th><th></th>
+                    <th id="h0" style="width:1px;overflow:hidden"><div style="width:200px;height:1px"></div></th>
+                    <th></th>
+                </tr></thead>
+            `;
+            Object.defineProperty(table.querySelector('#h0')!, 'scrollWidth', { configurable: true, value: 200 });
+            const w = readScrollableHeaderDomWidthsPx(table, ['colA'], STATION_MGMT_FROZEN_LEFT_TH_COUNT);
+            expect(w['colA']).toBe(200);
+        });
+
+        it('returns {} when th count does not match scrollable columns + frozen + actions', () => {
+            const table = document.createElement('table');
+            table.innerHTML = `<thead><tr><th></th><th></th><th></th></tr></thead>`;
+            expect(readScrollableHeaderDomWidthsPx(table, ['a', 'b'], STATION_MGMT_FROZEN_LEFT_TH_COUNT)).toEqual({});
         });
     });
 

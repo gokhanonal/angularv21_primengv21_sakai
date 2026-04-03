@@ -21,13 +21,14 @@ import { DialogModule } from 'primeng/dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
+import { MenuModule } from 'primeng/menu';
 import { MessageModule } from 'primeng/message';
 import { SkeletonModule } from 'primeng/skeleton';
 import { Table, TableModule } from 'primeng/table';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
-import { SplitButtonModule } from 'primeng/splitbutton';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 import { I18nService } from '@/app/core/i18n/i18n.service';
@@ -36,6 +37,13 @@ import {
     applyScrollableColumnWidthsToTable,
     computeScrollableColumnWidthsPx,
     createCanvasTextMeasureFn,
+    readScrollableHeaderDomWidthsPx,
+    STATION_MGMT_AUTO_SIZE_CELL_PADDING_PX,
+    STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
+    STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+    STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+    STATION_MGMT_AUTO_SIZE_REM_PX,
+    STATION_MGMT_FROZEN_LEFT_TH_COUNT,
     type StationMgmtColumnWidthSample
 } from './station-management-column-autosize';
 import { StationManagementRow } from './station-management.model';
@@ -113,7 +121,8 @@ function escapeHtmlText(value: string): string {
         DialogModule,
         MultiSelectModule,
         SelectModule,
-        SplitButtonModule,
+        MenuModule,
+        TooltipModule,
         TranslatePipe
     ],
     providers: [ConfirmationService, MessageService],
@@ -285,17 +294,6 @@ function escapeHtmlText(value: string): string {
                                     [outlined]="true"
                                     (onClick)="clearAllFilters(dt, globalFilterInput)"
                                 />
-                                <p-splitbutton
-                                    type="button"
-                                    icon="pi pi-file-export"
-                                    [label]="''"
-                                    [outlined]="true"
-                                    [model]="exportSplitMenuItems(dt)"
-                                    (onClick)="exportExcel(dt)"
-                                    [tooltip]="exportSplitTooltipText()"
-                                    [buttonProps]="exportSplitMainButtonProps()"
-                                    [expandAriaLabel]="exportSplitExpandAria()"
-                                />
                                 <p-multiselect
                                     [options]="columnPickerOptions()"
                                     [ngModel]="visibleDataColumnKeys"
@@ -313,17 +311,30 @@ function escapeHtmlText(value: string): string {
                                     styleClass="min-w-[12rem] max-w-[20rem] sm:max-w-[24rem]"
                                 />
                             </div>
-                            <p-iconfield class="w-full sm:w-auto sm:ml-auto">
-                                <p-inputicon class="pi pi-search" />
-                                <input
-                                    #globalFilterInput
-                                    pInputText
-                                    type="text"
-                                    class="w-full"
-                                    [placeholder]="'stationMgmt.search' | t"
-                                    (input)="onGlobalFilter(dt, $event)"
+                            <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                                <p-iconfield class="flex-1 sm:flex-initial">
+                                    <p-inputicon class="pi pi-search" />
+                                    <input
+                                        #globalFilterInput
+                                        pInputText
+                                        type="text"
+                                        class="w-full"
+                                        [placeholder]="'stationMgmt.search' | t"
+                                        (input)="onGlobalFilter(dt, $event)"
+                                    />
+                                </p-iconfield>
+                                <p-button
+                                    type="button"
+                                    icon="pi pi-download"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    [pTooltip]="exportDownloadTooltip()"
+                                    tooltipPosition="top"
+                                    (onClick)="exportMenu.toggle($event)"
+                                    [attr.aria-label]="exportDownloadTooltip()"
                                 />
-                            </p-iconfield>
+                                <p-menu #exportMenu [model]="exportMenuItems" [popup]="true" appendTo="body" />
+                            </div>
                         </div>
                     </ng-template>
                     <ng-template #header let-columns>
@@ -629,36 +640,28 @@ export class StationManagementList implements OnInit {
         return this.i18n.t('stationMgmt.subtitle').trim();
     });
 
-    /** Main segment = Excel; menu = CSV + HTML (BA default — no duplicate Excel in menu). */
-    readonly exportSplitMainButtonProps = computed(() => {
+    readonly exportDownloadTooltip = computed(() => {
         this.i18n.lang();
-        return { ariaLabel: this.i18n.t('stationMgmt.export.splitAria') };
+        return this.i18n.t('stationMgmt.export.download');
     });
 
-    readonly exportSplitExpandAria = computed(() => {
-        this.i18n.lang();
-        return this.i18n.t('stationMgmt.export.expandAria');
-    });
-
-    readonly exportSplitTooltipText = computed(() => {
-        this.i18n.lang();
-        return this.i18n.t('stationMgmt.export.splitTooltip');
-    });
-
-    exportSplitMenuItems(dt: Table): MenuItem[] {
-        return [
-            {
-                label: this.i18n.t('stationMgmt.export.csv'),
-                icon: 'pi pi-file',
-                command: () => this.exportCsv(dt)
-            },
-            {
-                label: this.i18n.t('stationMgmt.export.html'),
-                icon: 'pi pi-code',
-                command: () => this.exportHtml(dt)
-            }
-        ];
-    }
+    readonly exportMenuItems: MenuItem[] = [
+        {
+            label: this.i18n.t('stationMgmt.export.csv'),
+            icon: 'pi pi-file',
+            command: () => this.tableRef && this.exportCsv(this.tableRef)
+        },
+        {
+            label: this.i18n.t('stationMgmt.export.excel'),
+            icon: 'pi pi-file-excel',
+            command: () => this.tableRef && this.exportExcel(this.tableRef)
+        },
+        {
+            label: this.i18n.t('stationMgmt.export.html'),
+            icon: 'pi pi-code',
+            command: () => this.tableRef && this.exportHtml(this.tableRef)
+        }
+    ];
 
     /** Global search only scans name plus optional columns that are visible (WYSIWYG with column picker). */
     get globalFilterFieldsForTable(): string[] {
@@ -708,13 +711,23 @@ export class StationManagementList implements OnInit {
             return;
         }
         const samples = this.buildColumnWidthSamples();
-        const widths = computeScrollableColumnWidthsPx(samples, this.measureCellText);
         const tableEl = this.tableRef?.tableViewChild?.nativeElement as HTMLTableElement | undefined;
         if (!tableEl || this.scrollableColumns.length === 0) {
             return;
         }
         const fields = this.scrollableColumns.map((c) => c.field);
-        applyScrollableColumnWidthsToTable(tableEl, fields, widths, 3, (el, prop, value) => {
+        const headerDomWidths = readScrollableHeaderDomWidthsPx(tableEl, fields, STATION_MGMT_FROZEN_LEFT_TH_COUNT);
+        const widths = computeScrollableColumnWidthsPx(
+            samples,
+            this.measureCellText,
+            STATION_MGMT_AUTO_SIZE_MAX_WIDTH_PX,
+            STATION_MGMT_AUTO_SIZE_HEADER_EXTRA_PX,
+            STATION_MGMT_AUTO_SIZE_CELL_PADDING_PX,
+            STATION_MGMT_AUTO_SIZE_REM_PX,
+            STATION_MGMT_AUTO_SIZE_HEADER_TEXT_MEASURE_SCALE,
+            headerDomWidths
+        );
+        applyScrollableColumnWidthsToTable(tableEl, fields, widths, STATION_MGMT_FROZEN_LEFT_TH_COUNT, (el, prop, value) => {
             this.renderer.setStyle(el, prop, value);
         });
     }
