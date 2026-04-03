@@ -17,19 +17,44 @@ import { StationManagementService } from './station-management.service';
     imports: [CommonModule, RouterModule, ButtonModule, TabsModule, TagModule, TranslatePipe],
     template: `
         <div class="card mb-4">
-            <p-button [label]="'stationMgmt.backToList' | t" icon="pi pi-arrow-left" [outlined]="true" routerLink="/station-management" class="mb-4" />
-
             @if (loading()) {
-                <p class="text-surface-500 dark:text-surface-400 m-0">{{ 'stationMgmt.loading' | t }}</p>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <p class="text-surface-500 dark:text-surface-400 m-0 min-w-0">{{ 'stationMgmt.loading' | t }}</p>
+                    <p-button
+                        [label]="'stationMgmt.backToList' | t"
+                        icon="pi pi-arrow-left"
+                        [outlined]="true"
+                        routerLink="/station-management"
+                        styleClass="shrink-0 self-start sm:self-center w-full sm:w-auto"
+                    />
+                </div>
             } @else if (notFound()) {
-                <h2 class="text-xl font-semibold m-0 mb-2">{{ 'stationMgmt.notFound' | t }}</h2>
-                <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.notFoundHint' | t }}</p>
-            } @else if (row(); as r) {
-                <div class="flex flex-col md:flex-row md:items-start gap-4 mb-4">
-                    <div>
-                        <h2 class="text-2xl font-semibold m-0 mb-2">{{ r.name }}</h2>
-                        <p-tag [value]="statusLabel(r)" [severity]="statusSeverity(r)" />
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-xl font-semibold m-0 mb-2">{{ 'stationMgmt.notFound' | t }}</h2>
+                        <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.notFoundHint' | t }}</p>
                     </div>
+                    <p-button
+                        [label]="'stationMgmt.backToList' | t"
+                        icon="pi pi-arrow-left"
+                        [outlined]="true"
+                        routerLink="/station-management"
+                        styleClass="shrink-0 self-start sm:self-center w-full sm:w-auto"
+                    />
+                </div>
+            } @else if (row(); as r) {
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
+                        <h2 class="text-2xl font-semibold m-0 truncate min-w-0 max-w-full sm:max-w-[min(100%,36rem)]">{{ r.name }}</h2>
+                        <p-tag [value]="statusLabel(r)" [severity]="statusSeverity(r)" class="shrink-0" />
+                    </div>
+                    <p-button
+                        [label]="'stationMgmt.backToList' | t"
+                        icon="pi pi-arrow-left"
+                        [outlined]="true"
+                        routerLink="/station-management"
+                        styleClass="shrink-0 self-start sm:self-center w-full sm:w-auto"
+                    />
                 </div>
 
                 <p-tabs value="0">

@@ -129,7 +129,7 @@ export const appRoutes: Routes = [
                 component: StationManagementDetail,
                 data: {
                     breadcrumbKey: 'breadcrumb.stationManagementDetail',
-                    breadcrumb: 'Station details',
+                    breadcrumb: 'Station Details',
                     pageTitle: '',
                     pageDescription: ''
                 }

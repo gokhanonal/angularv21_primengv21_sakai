@@ -668,11 +668,11 @@ As an **admin** viewing **Station Management → station detail** (`/station-man
 
 ### Acceptance criteria
 
-- [ ] Header shows **station name** and **status badge** on one logical row for desktop-width layout; **Back to list** is on the **right** of that row (LTR).
-- [ ] Status matches grid logic for **Deleted / Active / Inactive** from `isDeleted` / `isActive` for the loaded station.
-- [ ] **Back to list** navigates to **`/station-management`** and is **translated** in all supported languages.
-- [ ] Narrow viewport: layout **does not** omit status or back navigation; no horizontal overflow that breaks the shell.
-- [ ] Loading and **not found / error** states show appropriate copy and **Back to list** remains available where specified.
+- [x] Header shows **station name** and **status badge** on one logical row for desktop-width layout; **Back to list** is on the **right** of that row (LTR).
+- [x] Status matches grid logic for **Deleted / Active / Inactive** from `isDeleted` / `isActive` for the loaded station.
+- [x] **Back to list** navigates to **`/station-management`** and is **translated** in all supported languages.
+- [x] Narrow viewport: layout **does not** omit status or back navigation; no horizontal overflow that breaks the shell.
+- [x] Loading and **not found / error** states show appropriate copy and **Back to list** remains available where specified.
 
 ### Out of scope
 
@@ -680,7 +680,7 @@ Tab bodies (Station Info, Charging Units, etc.), **API** or data model changes, 
 
 ### Open questions
 
-- *(Nice-to-know)* If the **name is very long**, should the name **truncate with ellipsis** while status + back stay visible, or may the name wrap across lines?
+- *(Resolved for v1 — implementer default)* Long **name**: **ellipsis** on `sm+` (`truncate` + `max-w-[min(100%,36rem)]`); **flex-wrap** keeps **status** visible beside or below the title on narrow widths.
 
 ### Relationship to existing backlog
 
@@ -688,5 +688,5 @@ Aligns with **Station Management** routing (`/station-management/:stationId`, `s
 
 ### Validation
 
-- [ ] **`ng build`** succeeds.
-- [ ] **Manual:** desktop header layout; status vs grid for same row; back navigation; narrow viewport; loading / not found / error paths.
+- [x] **`ng build`** succeeds.
+- [ ] **Manual:** desktop header layout; status vs grid for same row; back navigation; narrow viewport; loading / not found / error paths. *(Owner smoke.)*
