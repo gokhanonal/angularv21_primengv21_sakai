@@ -63,7 +63,7 @@ export const appRoutes: Routes = [
                 }
             },
             {
-                path: 'stations',
+                path: 'dashboard-stations',
                 component: Stations,
                 data: {
                     breadcrumbKey: 'breadcrumb.stations',
@@ -73,7 +73,7 @@ export const appRoutes: Routes = [
                 }
             },
             {
-                path: 'stations/:locationId',
+                path: 'dashboard-stations/:locationId',
                 component: StationDetail,
                 data: {
                     breadcrumbKey: 'breadcrumb.stationDetail',
@@ -81,6 +81,16 @@ export const appRoutes: Routes = [
                     pageTitle: 'Station detail',
                     pageDescription: 'Station fields from demo JSON.'
                 }
+            },
+            {
+                path: 'stations/:locationId',
+                redirectTo: 'dashboard-stations/:locationId',
+                pathMatch: 'full'
+            },
+            {
+                path: 'stations',
+                redirectTo: 'dashboard-stations',
+                pathMatch: 'full'
             },
             {
                 path: 'notifications',

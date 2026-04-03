@@ -81,7 +81,7 @@ export class AppMenu {
                         label: t('menu.stations'),
                         description: t('menu.stationsDesc'),
                         icon: 'pi pi-fw pi-bolt',
-                        routerLink: ['/stations']
+                        routerLink: ['/dashboard-stations']
                     }
                 ]
             },

@@ -24,7 +24,7 @@ function parseLocationIdParam(raw: string | null): number {
     template: `
         @if (loadError(); as err) {
             <p-message severity="error" styleClass="mb-4 w-full">{{ err }}</p-message>
-            <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/stations']" />
+            <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/dashboard-stations']" />
         } @else if (loading()) {
             <div class="card flex flex-col gap-4">
                 <p-skeleton width="40%" height="2rem" />
@@ -41,7 +41,7 @@ function parseLocationIdParam(raw: string | null): number {
                         <p class="card-description font-mono text-sm">{{ st.location_code }} &middot; ID {{ st.location_id }}</p>
                     </div>
                     <div class="card-actions">
-                        <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/stations']" [outlined]="true" />
+                        <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/dashboard-stations']" [outlined]="true" />
                     </div>
                 </div>
                 <div class="card-header-divider"></div>
@@ -66,7 +66,7 @@ function parseLocationIdParam(raw: string | null): number {
             <div class="card flex flex-col gap-4">
                 <div class="font-semibold text-xl">Station not found</div>
                 <p class="text-surface-500 dark:text-surface-400">No station matches this location ID.</p>
-                <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/stations']" />
+                <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/dashboard-stations']" />
             </div>
         }
     `

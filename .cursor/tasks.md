@@ -334,3 +334,123 @@
 ### Automated tests
 
 - [ ] Optional: unit tests for validators / mock service; component tests when harness covers new routes.
+
+## Top bar: circular avatar (profile trigger)
+
+**Source intent:** “add a circle to avatar on the top right” — top-right **profile** control should read as a **round avatar** (photo + placeholder).
+
+**Goal:** Clear **circular** treatment for **`layout-topbar-profile-trigger`** in **light/dark**; **no change** to profile menu commands, routes, or RTL order.
+
+**Context:** `app.topbar.ts` uses `<img class="layout-topbar-profile-img">` or `pi-user` inside the trigger; `_topbar.scss` already uses **`overflow: hidden`**, **`object-fit: cover`**, and **`layout-topbar-action`** is **`2.5rem`** with **`border-radius: 50%`**. This task may be **polish** (visible **ring**, contrast, icon centered) if the circle is already correct—verify first.
+
+### Product defaults (until design overrides)
+
+- [x] **Shape:** True **circle** (not ellipse); outer size **2.5rem** to match other `layout-topbar-action` controls.
+- [x] **Photo:** Keep **`object-fit: cover`** unless product asks for **`contain`** (letterboxing).
+- [x] **Placeholder:** **`pi-user`** in the **same** circular frame as the photo (size, border, padding).
+- [x] **Decorative ring (default proposal):** **1px** solid **`var(--surface-border)`** in light and dark, unless **clip-only** is chosen after visual check.
+- [x] **Focus:** **`:focus-visible`** remains clearly visible (no decorative ring that hides keyboard focus).
+
+### Breakdown
+
+1. **Audit** — *done:* implementation adds **1px `surface-border` ring** + **flex centering** for placeholder; **`outline-offset`** bumped on **`:focus-visible`** so focus stays clear past the border; mobile menu keeps **2.5rem** circle.
+   - [x] Compare **with/without** saved avatar at **100%** and **200%** zoom; note any **square corners**, **oval**, or **misaligned** icon.
+
+2. **Styles (`_topbar.scss`)**
+   - [x] Ensure **`.layout-topbar-profile-trigger`** is **`border-radius: 50%`**, **`overflow: hidden`**, fixed **width/height** aligned with siblings (if not inherited reliably from `.layout-topbar-action`).
+   - [x] If spec includes **ring:** add **`border`** (or **`box-shadow`**) using **theme tokens**; verify **light + dark**.
+   - [x] Center **`pi-user`** when no image (flex **center** on trigger if needed).
+
+3. **Template (`app.topbar.ts`)**
+   - [x] Confirm **`alt=""`** on avatar image is acceptable with **`aria-label`** on the button (existing a11y pattern); adjust only if product wants non-empty `alt`.
+
+4. **Regression**
+   - [x] **Mobile** overflow menu: profile trigger still **circular** inside the dropdown panel.
+   - [x] **Hover/active** states consistent with adjacent top-bar actions.
+
+### Validation
+
+- [x] **`ng build`** succeeds.
+- [x] **Manual:** *(owner optional)* photo + no-photo + theme toggle + **Tab** to profile control (**focus visible**); optional **RTL** smoke if the app enables RTL.
+
+### Out of scope
+
+- Profile **page** avatar styling, image **upload/editor** behavior, menu item labels/icons, new assets or APIs.
+
+### Open questions (from BA brief — resolve if defaults above are rejected)
+
+- **Clip-only** vs **visible ring** (blocking for final acceptance).
+- **Ring color/token** if not `surface-border`.
+
+## Change `/stations` to `/dashboard-stations` (routing and links)
+
+**Goal:** Rename the Stations feature’s **public URL segment** from `/stations` to `/dashboard-stations` and update **all in-app navigation** (routes, sidebar menu, grid detail links, back links) so users reach the same screens via the new paths.
+
+### User-facing impact
+
+| Area | Change |
+|------|--------|
+| **URLs** | List page moves from `/stations` to `/dashboard-stations`; detail path depends on open questions below. |
+| **Bookmarks / shared links** | Saved or external links to `/stations` or `/stations/:locationId` **break** unless **redirects** are added. |
+| **Sidebar** | Same menu label (`menu.stations` i18n); **`routerLink`** must use the new path. Sidebar search matches **localized label**, not path — no key rename required for search. |
+| **Breadcrumbs** | Segment text from `breadcrumb.stations` / `breadcrumb.stationDetail`; **address bar** must match new route(s). |
+| **Station detail** | “Back to stations” / equivalent **`routerLink`** must target the **new** list path. |
+
+### Scope boundaries
+
+**In scope (minimal done):**
+
+- [x] `app.routes.ts`: `path: 'stations'` → `'dashboard-stations'` (and detail path if product chooses consistency — see open questions).
+- [x] `app.menu.ts`: `routerLink: ['/stations']` → `['/dashboard-stations']`.
+- [x] `stations.ts`: `[routerLink]="['/stations', row.location_id]"` → new base segment + id.
+- [x] `station-detail.ts`: all `[routerLink]="['/stations']"` → new list path (and detail route segment if changed).
+
+**Out of scope unless backlog expands:**
+
+- HTTP / static data: `/demo/locations.json`, `StationsService` URLs, `public/demo/*` paths.
+- Renaming Angular **folders**, **components**, **selectors** (`app-stations`), or **translation namespaces** (`stations.*`, `menu.stations`) — not required for URL rename alone.
+- Menu or breadcrumb copy to say “Dashboard stations” — only if stakeholders ask.
+
+**Decision-dependent:**
+
+- Detail: `/stations/:locationId` vs `/dashboard-stations/:locationId`.
+- Redirects from old `/stations` (and old detail) to new URLs.
+
+### Acceptance criteria
+
+1. [x] Navigating to **`/dashboard-stations`** shows the same Stations list/map/KPI/table as today’s list page.
+2. [x] Sidebar Stations entry navigates to **`/dashboard-stations`** (not `/stations`).
+3. [x] Grid **Detail** uses the **agreed** detail URL pattern; detail page still loads the same station by `locationId`.
+4. [x] All **back-to-list** actions target **`/dashboard-stations`** (or agreed list path).
+5. [x] **`ng build`** succeeds.
+6. [x] No remaining in-app **`routerLink` / `navigate`** targeting **`/stations`** for this feature (unless legacy routes kept on purpose).
+7. [x] **Old URL behavior** defined: **(A)** old paths unmatched / 404-style, or **(B)** **redirect** to new list/detail — document which applies; preserve query params if any are introduced later.
+8. [x] If visible copy changes (e.g. “Dashboard stations”), **`translations.ts`** stays in sync for **en, tr, fr, de**.
+9. [x] Breadcrumb trail **URLs** in the address bar match the new segment(s); labels unchanged unless product requests.
+
+### Edge cases and risks
+
+- Broken **deep links**: bookmarks, emails, docs, QA scripts using `/stations` or `/stations/:id`.
+- **External docs / training** referencing old paths — update or add redirects.
+- **SEO:** Typical SPA — low impact unless marketing relies on distinct station URLs.
+- **Consistency with `/locations`:** Locations use `/locations` without a `dashboard-` prefix; **`/dashboard-stations`** is a deliberate split only if stakeholders want it.
+- **Hardcoded UI:** `station-detail.ts` may use English “Back to stations” — optional i18n follow-up.
+- **tasks.md drift:** Older completed sections still mention `/stations` in prose — historical vs. update for accuracy is a doc hygiene choice.
+
+### Open questions (resolve before or during implementation)
+
+**Resolved for this implementation (BA-documented defaults, 2026-04-03):**
+
+1. **Detail path:** **`/dashboard-stations/:locationId`** (canonical); old **`/stations/:locationId`** redirects there.
+2. **Redirects:** **(B)** In-app only: **`/stations` → `/dashboard-stations`**, **`/stations/:locationId` → `/dashboard-stations/:locationId`** (`app.routes.ts`). Query/hash on redirects follow Angular default behavior when introduced later.
+3. **Copy:** Unchanged — menu/breadcrumb keys still read “Stations” / localized equivalents (`menu.stations`, `breadcrumb.*`).
+4. **“Back to stations”:** Deferred i18n; button label unchanged (English) in `station-detail.ts` — follow-up task if desired.
+
+### Validation
+
+- [x] **`ng build`** succeeds.
+- [ ] **Manual:** sidebar → list; grid detail → detail; back → list; optional old-URL behavior per AC §7. *(Owner smoke-test.)*
+
+### Backlog hygiene note
+
+This item previously was a **single line** with a typo (“relavent”) and no AC or redirect policy — routing renames often miss links or bookmarks. After implementation, consider whether older `tasks.md` sections that reference `/stations` should stay as history or be updated for accuracy.

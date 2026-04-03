@@ -237,7 +237,7 @@ interface StationKpiCard {
                                     [label]="'stations.col.detail' | t"
                                     icon="pi pi-arrow-right"
                                     iconPos="right"
-                                    [routerLink]="['/stations', row.location_id]"
+                                    [routerLink]="['/dashboard-stations', row.location_id]"
                                     [rounded]="true"
                                     [text]="true"
                                 />
