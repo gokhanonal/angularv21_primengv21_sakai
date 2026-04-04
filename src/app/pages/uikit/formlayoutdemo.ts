@@ -76,7 +76,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
             <div class="md:w-1/2">
                 <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
-                    <h3 class="card-title">Horizantal Form Layout</h3>
+                    <h3 class="card-title">Horizontal Form Layout</h3>
                     <div class="grid grid-cols-12 gap-4 grid-cols-12 gap-2">
                         <label for="name3" class="flex items-center col-span-12 mb-2 md:col-span-2 md:mb-0">Name</label>
                         <div class="col-span-12 md:col-span-10">

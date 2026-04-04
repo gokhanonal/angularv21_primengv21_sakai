@@ -104,7 +104,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <button type="button" pButton icon="pi pi-chevron-down" label="Options" (click)="menu.toggle($event)" style="width:auto"></button>
                 </div>
 
-                <div class="card" appCardMaximize #anchor>
+                <div class="card" appCardMaximize [showWindowMaximize]="true" #anchor>
                     <div class="font-semibold text-xl mb-4">Context Menu</div>
                     Right click to display.
                     <p-contextmenu [target]="anchor" [model]="contextMenuItems"></p-contextmenu>
