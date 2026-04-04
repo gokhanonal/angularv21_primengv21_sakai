@@ -253,6 +253,7 @@ const en: TranslationTable = {
     'stationMgmt.export.html': 'Export HTML',
     'stationMgmt.export.excelErrorTitle': 'Excel export failed',
     'stationMgmt.export.excelErrorDetail': 'Could not build the spreadsheet. Try CSV or HTML.',
+    'stationMgmt.resetGrid': 'Reset Grid',
 
     'kpi.ac.title': 'AC connectors',
     'kpi.ac.footer': 'AC charging points (per station).',
@@ -492,6 +493,7 @@ const tr: TranslationTable = {
     'stationMgmt.export.html': 'HTML dışa aktar',
     'stationMgmt.export.excelErrorTitle': 'Excel dışa aktarılamadı',
     'stationMgmt.export.excelErrorDetail': 'Tablo oluşturulamadı. CSV veya HTML deneyin.',
+    'stationMgmt.resetGrid': 'Izgarayı Sıfırla',
 
     'kpi.ac.title': 'AC Konnektör Sayısı',
     'kpi.ac.footer': 'AC tipi şarj noktası sayısı (istasyon bazlı).',
@@ -715,6 +717,7 @@ const fr: TranslationTable = {
     'stationMgmt.export.html': 'Exporter HTML',
     'stationMgmt.export.excelErrorTitle': 'Échec export Excel',
     'stationMgmt.export.excelErrorDetail': 'Impossible de générer le classeur. Essayez CSV ou HTML.',
+    'stationMgmt.resetGrid': 'Réinitialiser la grille',
 
     'kpi.ac.title': 'Nombre de connecteurs AC',
     'kpi.ac.footer': 'Points de charge AC (par site).',
@@ -938,6 +941,7 @@ const de: TranslationTable = {
     'stationMgmt.export.html': 'HTML exportieren',
     'stationMgmt.export.excelErrorTitle': 'Excel-Export fehlgeschlagen',
     'stationMgmt.export.excelErrorDetail': 'Tabelle konnte nicht erstellt werden. CSV oder HTML versuchen.',
+    'stationMgmt.resetGrid': 'Raster zurücksetzen',
 
     'kpi.ac.title': 'AC-Anschlüsse',
     'kpi.ac.footer': 'AC-Ladepunkte (pro Standort).',

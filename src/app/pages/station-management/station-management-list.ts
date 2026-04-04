@@ -14,7 +14,14 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ConfirmationService, FilterMatchMode, FilterService, MenuItem, MessageService } from 'primeng/api';
+import {
+    ConfirmationService,
+    FilterMatchMode,
+    FilterService,
+    MenuItem,
+    MessageService,
+    SortMeta
+} from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
@@ -48,6 +55,11 @@ import {
 } from './station-management-column-autosize';
 import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
+import { GridState } from '@/app/core/grid/grid-state.model';
+import { GridStateService } from '@/app/core/grid/grid-state.service';
+
+const STATION_MGMT_GRID_PAGE = 'station-management';
+const STATION_MGMT_GRID_NAME = 'main';
 
 /** Non-frozen data columns only (selection, station code, name, actions stay always visible). */
 const STATION_MGMT_DATA_COLUMN_OPTIONS: readonly { key: string; labelKey: string }[] = [
@@ -267,15 +279,17 @@ function escapeHtmlText(value: string): string {
                     columnResizeMode="expand"
                     [reorderableColumns]="true"
                     sortMode="multiple"
+                    [multiSortMeta]="multiSortMeta"
                     [paginator]="true"
                     [rows]="tableRowsPerPage"
                     [rowsPerPageOptions]="[10, 25, 50]"
                     [showCurrentPageReport]="true"
                     [currentPageReportTemplate]="'stationMgmt.pageReport' | t"
                     [globalFilterFields]="globalFilterFieldsForTable"
-                    (onSort)="clearTableSelection()"
+                    (onSort)="onSort($event)"
                     (onFilter)="clearTableSelection()"
                     (onColReorder)="onColReorder($event)"
+                    (onColResize)="onColResize()"
                 >
                     <ng-template #caption>
                         <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center justify-between">
@@ -323,6 +337,16 @@ function escapeHtmlText(value: string): string {
                                         (input)="onGlobalFilter(dt, $event)"
                                     />
                                 </p-iconfield>
+                                <p-button
+                                    type="button"
+                                    icon="pi pi-undo"
+                                    [rounded]="true"
+                                    [text]="true"
+                                    [pTooltip]="resetGridTooltip()"
+                                    tooltipPosition="top"
+                                    (onClick)="resetGridState(dt, globalFilterInput)"
+                                    [attr.aria-label]="resetGridTooltip()"
+                                />
                                 <p-button
                                     type="button"
                                     icon="pi pi-download"
@@ -562,6 +586,7 @@ export class StationManagementList implements OnInit {
     private readonly filterService = inject(FilterService);
     private readonly injector = inject(Injector);
     private readonly renderer = inject(Renderer2);
+    private readonly gridState = inject(GridStateService);
     private readonly measureCellText = createCanvasTextMeasureFn();
 
     readonly loading = signal(true);
@@ -585,6 +610,10 @@ export class StationManagementList implements OnInit {
 
     /** Visible scrollable columns passed to PrimeNG (mutated in place on reorder). */
     scrollableColumns: StationMgmtScrollableColumnDef[] = [];
+
+    multiSortMeta: SortMeta[] | undefined;
+
+    private storedColumnWidths: Record<string, string> | null = null;
 
     readonly columnPickerOptions = computed(() => {
         this.i18n.lang();
@@ -645,6 +674,11 @@ export class StationManagementList implements OnInit {
         return this.i18n.t('stationMgmt.export.download');
     });
 
+    readonly resetGridTooltip = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stationMgmt.resetGrid');
+    });
+
     readonly exportMenuItems: MenuItem[] = [
         {
             label: this.i18n.t('stationMgmt.export.csv'),
@@ -670,6 +704,7 @@ export class StationManagementList implements OnInit {
     }
 
     ngOnInit(): void {
+        this.restoreGridState();
         this.rebuildScrollableColumns();
         this.reload();
     }
@@ -730,6 +765,124 @@ export class StationManagementList implements OnInit {
         applyScrollableColumnWidthsToTable(tableEl, fields, widths, STATION_MGMT_FROZEN_LEFT_TH_COUNT, (el, prop, value) => {
             this.renderer.setStyle(el, prop, value);
         });
+        this.applyStoredColumnWidths();
+    }
+
+    private applyStoredColumnWidths(): void {
+        if (!this.storedColumnWidths) {
+            return;
+        }
+        const tableEl = this.tableRef?.tableViewChild?.nativeElement as HTMLTableElement | undefined;
+        if (!tableEl) {
+            return;
+        }
+        const fields = this.scrollableColumns.map((c) => c.field);
+        const frozenCount = STATION_MGMT_FROZEN_LEFT_TH_COUNT;
+        const headerRow = tableEl.querySelector('thead tr') as HTMLTableRowElement | null;
+        if (!headerRow) {
+            return;
+        }
+        const ths = Array.from(headerRow.children) as HTMLElement[];
+        for (let i = 0; i < fields.length; i++) {
+            const width = this.storedColumnWidths[fields[i]];
+            if (width) {
+                const thIndex = frozenCount + i;
+                if (thIndex < ths.length) {
+                    this.renderer.setStyle(ths[thIndex], 'width', width);
+                    this.renderer.setStyle(ths[thIndex], 'min-width', width);
+                }
+            }
+        }
+        this.storedColumnWidths = null;
+    }
+
+    private restoreGridState(): void {
+        const stored = this.gridState.load(STATION_MGMT_GRID_PAGE, STATION_MGMT_GRID_NAME);
+        if (!stored) {
+            return;
+        }
+        const validKeys = new Set(STATION_MGMT_DATA_COLUMN_KEYS);
+        const visibleColumns = stored.visibleColumns.filter((k) => validKeys.has(k));
+        const columnOrder = stored.columnOrder.filter((k) => validKeys.has(k));
+
+        if (visibleColumns.length > 0) {
+            this.visibleDataColumnKeys = visibleColumns;
+        }
+        if (columnOrder.length > 0) {
+            this.dataColumnOrder = columnOrder;
+        }
+
+        const visibleFields = new Set(this.visibleDataColumnKeys.map((k) => (k === 'status' ? 'statusCategory' : k)));
+        visibleFields.add('stationInfoId');
+        visibleFields.add('name');
+        const restoredSort = stored.sortState.filter((s) => visibleFields.has(s.field));
+        this.multiSortMeta = restoredSort.length > 0 ? restoredSort : undefined;
+
+        this.storedColumnWidths = stored.columnWidths;
+    }
+
+    private saveGridState(): void {
+        const columnWidths = this.readColumnWidthsFromDom();
+        const state: GridState = {
+            visibleColumns: [...this.visibleDataColumnKeys],
+            columnOrder: [...this.dataColumnOrder],
+            columnWidths,
+            sortState: this.multiSortMeta?.length ? [...this.multiSortMeta] : []
+        };
+        this.gridState.save(STATION_MGMT_GRID_PAGE, STATION_MGMT_GRID_NAME, state);
+    }
+
+    private readColumnWidthsFromDom(): Record<string, string> {
+        const widths: Record<string, string> = {};
+        const tableEl = this.tableRef?.tableViewChild?.nativeElement as HTMLTableElement | undefined;
+        if (!tableEl) {
+            return widths;
+        }
+        const fields = this.scrollableColumns.map((c) => c.field);
+        const headerRow = tableEl.querySelector('thead tr') as HTMLTableRowElement | null;
+        if (!headerRow) {
+            return widths;
+        }
+        const ths = Array.from(headerRow.children) as HTMLElement[];
+        for (let i = 0; i < fields.length; i++) {
+            const thIndex = STATION_MGMT_FROZEN_LEFT_TH_COUNT + i;
+            if (thIndex < ths.length) {
+                const w = ths[thIndex].style.width;
+                if (w) {
+                    widths[fields[i]] = w;
+                }
+            }
+        }
+        return widths;
+    }
+
+    onSort(event: unknown): void {
+        if (event && typeof event === 'object' && 'multisortmeta' in event) {
+            const m = (event as { multisortmeta: SortMeta[] | null | undefined }).multisortmeta;
+            this.multiSortMeta = m?.length ? [...m] : undefined;
+        }
+        this.clearTableSelection();
+        this.saveGridState();
+    }
+
+    onColResize(): void {
+        this.saveGridState();
+    }
+
+    resetGridState(table: Table, searchInput?: HTMLInputElement | null): void {
+        this.gridState.clear(STATION_MGMT_GRID_PAGE, STATION_MGMT_GRID_NAME);
+        this.visibleDataColumnKeys = [...STATION_MGMT_DATA_COLUMN_KEYS];
+        this.dataColumnOrder = [...STATION_MGMT_DEFAULT_DATA_COLUMN_ORDER];
+        this.multiSortMeta = undefined;
+        this.storedColumnWidths = null;
+        this.rebuildScrollableColumns();
+        this.clearTableSelection();
+        table.clear();
+        table.filterGlobal('', 'contains');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        this.scheduleApplyScrollableColumnAutoWidths();
     }
 
     private buildColumnWidthSamples(): StationMgmtColumnWidthSample[] {
@@ -784,6 +937,7 @@ export class StationManagementList implements OnInit {
         const newOrder = cols.map((c) => this.dataKeyFromScrollableField(c.field));
         this.mergeDataColumnOrderFromVisibleReorder(newOrder);
         this.scheduleApplyScrollableColumnAutoWidths();
+        this.saveGridState();
     }
 
     private mergeDataColumnOrderFromVisibleReorder(newVisibleOrder: string[]): void {
@@ -825,6 +979,7 @@ export class StationManagementList implements OnInit {
         this.clearTableSelection();
         table._filter();
         this.scheduleApplyScrollableColumnAutoWidths();
+        this.saveGridState();
     }
 
     private rebuildScrollableColumns(): void {
