@@ -19,7 +19,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     imports: [ToastModule, DialogModule, ButtonModule, DrawerModule, PopoverModule, ConfirmPopupModule, InputTextModule, FormsModule, TooltipModule, TableModule, ToastModule, CardMaximizeDirective],
     template: `<div class="flex flex-col md:flex-row gap-8">
         <div class="md:w-1/2">
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Dialog</div>
                 <p-dialog header="Dialog" [(visible)]="display" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true">
                     <p class="leading-normal m-0">
@@ -33,7 +33,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 <p-button label="Show" [style]="{ width: 'auto' }" (click)="open()" />
             </div>
 
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Popover</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button type="button" label="Show" (click)="toggleDataTable(op2, $event)" />
@@ -67,7 +67,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
 
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Tooltip</div>
                 <div class="inline-flex gap-4">
                     <input pInputText type="text" placeholder="Username" pTooltip="Your username" />
@@ -76,7 +76,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
         </div>
         <div class="md:w-1/2">
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Drawer</div>
                 <p-drawer [(visible)]="visibleLeft" header="Drawer">
                     <p>
@@ -120,13 +120,13 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 <p-button icon="pi pi-external-link" (click)="visibleFull = true" />
             </div>
 
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">ConfirmPopup</div>
                 <p-confirmpopup key="confirm2"></p-confirmpopup>
                 <p-button #popup (click)="confirm($event)" icon="pi pi-check" label="Confirm" class="mr-2"></p-button>
             </div>
 
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">ConfirmDialog</div>
                 <p-button label="Delete" icon="pi pi-trash" severity="danger" [style]="{ width: 'auto' }" (click)="openConfirmation()" />
                 <p-dialog header="Confirmation" [(visible)]="displayConfirmation" [style]="{ width: '350px' }" [modal]="true">

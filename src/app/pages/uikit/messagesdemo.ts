@@ -15,7 +15,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     template: `
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Toast</div>
                     <div class="flex flex-wrap gap-2">
                         <p-button (click)="showSuccessViaToast()" label="Success" severity="success" />
@@ -39,7 +39,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Message</div>
                     <div class="flex flex-col gap-4 mb-4">
                         <p-message severity="success">Success Message</p-message>

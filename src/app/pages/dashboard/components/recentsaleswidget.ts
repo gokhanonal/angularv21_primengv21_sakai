@@ -10,7 +10,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     standalone: true,
     selector: 'app-recent-sales-widget',
     imports: [CommonModule, TableModule, ButtonModule, RippleModule, CardMaximizeDirective],
-    template: `<div class="card mb-8!" appCardMaximize>
+    template: `<div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
 
         <div class="card-header">
             <div class="card-heading">

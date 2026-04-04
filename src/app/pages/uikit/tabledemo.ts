@@ -47,7 +47,7 @@ interface expandedRows {
         IconFieldModule,
         CardMaximizeDirective
     ],
-    template: ` <div class="card" appCardMaximize>
+    template: ` <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Filtering</div>
             <p-table
                 #dt1
@@ -203,7 +203,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Frozen Columns</div>
             <p-togglebutton [(ngModel)]="balanceFrozen" [onIcon]="'pi pi-lock'" offIcon="pi pi-lock-open" [onLabel]="'Balance'" offLabel="Balance" />
 
@@ -239,7 +239,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Row Expansion</div>
             <p-table [value]="products" dataKey="id" [tableStyle]="{ 'min-width': '60rem' }" [expandedRowKeys]="expandedRows">
                 <ng-template #caption>
@@ -330,7 +330,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Grouping</div>
             <p-table [value]="customers3" sortField="representative.name" sortMode="single" [scrollable]="true" scrollHeight="400px" rowGroupMode="subheader" groupRowsBy="representative.name" [tableStyle]="{ 'min-width': '60rem' }">
                 <ng-template #header>

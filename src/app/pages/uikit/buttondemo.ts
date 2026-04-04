@@ -11,7 +11,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     imports: [ButtonModule, ButtonGroupModule, SplitButtonModule, CardMaximizeDirective],
     template: `<div class="flex flex-col md:flex-row gap-8">
         <div class="md:w-1/2">
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Default</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Submit"></p-button>
@@ -19,7 +19,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Link" class="p-button-link" />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Severities</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Primary" />
@@ -32,7 +32,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Contrast" severity="contrast" />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Text</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Primary" text />
@@ -45,7 +45,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Plain" text />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Outlined</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Primary" outlined />
@@ -58,7 +58,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Contrast" severity="contrast" outlined />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Group</div>
                 <div class="flex flex-wrap gap-2">
                     <p-buttongroup>
@@ -68,7 +68,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     </p-buttongroup>
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">SplitButton</div>
                 <div class="flex flex-wrap gap-2">
                     <p-splitbutton label="Save" [model]="items"></p-splitbutton>
@@ -81,7 +81,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-splitbutton label="Save" [model]="items" severity="contrast"></p-splitbutton>
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Templating</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button type="button">
@@ -95,7 +95,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
         </div>
         <div class="md:w-1/2">
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Icons</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button icon="pi pi-bookmark"></p-button>
@@ -103,7 +103,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Bookmark" icon="pi pi-bookmark" iconPos="right"></p-button>
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Raised</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Primary" raised />
@@ -116,7 +116,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Contrast" severity="contrast" raised />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Rounded</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button label="Primary" rounded />
@@ -129,7 +129,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button label="Contrast" severity="contrast" rounded />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Rounded Icons</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button icon="pi pi-check" rounded />
@@ -141,7 +141,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button icon="pi pi-times" severity="danger" rounded />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Rounded Text</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button icon="pi pi-check" text raised rounded />
@@ -153,7 +153,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button icon="pi pi-times" severity="danger" text raised rounded />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Rounded Outlined</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button icon="pi pi-check" rounded outlined />
@@ -165,7 +165,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-button icon="pi pi-times" severity="danger" rounded outlined />
                 </div>
             </div>
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Loading</div>
                 <div class="flex flex-wrap gap-2">
                     <p-button type="button" label="Search" icon="pi pi-search" [loading]="loading[0]" (click)="load(0)" />

@@ -21,7 +21,7 @@ function parseLocationIdParam(raw: string | null): number {
     imports: [CommonModule, RouterModule, ButtonModule, CardMaximizeDirective],
     template: `
         @if (location(); as loc) {
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="card-header">
                     <div class="card-heading">
                         <h3 class="card-title">{{ loc.site }}</h3>
@@ -56,7 +56,7 @@ function parseLocationIdParam(raw: string | null): number {
                 </div>
             </div>
         } @else {
-            <div class="card flex flex-col gap-4" appCardMaximize>
+            <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Location not found</div>
                 <p class="text-surface-500 dark:text-surface-400">No site matches this ID.</p>
                 <p-button label="Back to directory" icon="pi pi-arrow-left" [routerLink]="['/locations']" />

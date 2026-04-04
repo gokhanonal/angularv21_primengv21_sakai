@@ -12,12 +12,12 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     standalone: true,
     imports: [CommonModule, FormsModule, TreeModule, TreeTableModule, CardMaximizeDirective],
     template: `
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl">Tree</div>
             <p-tree [value]="treeValue()" selectionMode="checkbox" [(selection)]="selectedTreeValue"></p-tree>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">TreeTable</div>
             <p-treetable [value]="treeTableValue()" [columns]="cols" selectionMode="checkbox" [(selectionKeys)]="selectedTreeTableValue" dataKey="key" [scrollable]="true" [tableStyle]="{ 'min-width': '50rem' }">
                 <ng-template #header let-columns>

@@ -40,7 +40,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
         CardMaximizeDirective
     ],
     template: `
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Menubar</div>
             <p-menubar [model]="nestedMenuItems">
                 <ng-template #end>
@@ -52,14 +52,14 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </p-menubar>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Breadcrumb</div>
             <p-breadcrumb [model]="breadcrumbItems" [home]="breadcrumbHome"></p-breadcrumb>
         </div>
 
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Steps</div>
                     <p-stepper [value]="1">
                         <p-step-list>
@@ -71,7 +71,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">TabMenu</div>
                     <p-tabs [value]="0">
                         <p-tablist>
@@ -86,19 +86,19 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
 
         <div class="flex flex-col md:flex-row gap-8 mt-6">
             <div class="md:w-1/3">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Tiered Menu</div>
                     <p-tieredmenu [model]="tieredMenuItems"></p-tieredmenu>
                 </div>
             </div>
             <div class="md:w-1/3">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Plain Menu</div>
                     <p-menu [model]="menuItems"></p-menu>
                 </div>
             </div>
             <div class="md:w-1/3">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">Overlay Menu</div>
                     <p-menu #menu [popup]="true" [model]="overlayMenuItems"></p-menu>
                     <button type="button" pButton icon="pi pi-chevron-down" label="Options" (click)="menu.toggle($event)" style="width:auto"></button>
@@ -114,7 +114,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
 
         <div class="flex flex-col md:flex-row gap-8 mt-8">
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">MegaMenu | Horizontal</div>
                     <p-megamenu [model]="megaMenuItems" />
 
@@ -123,7 +123,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">PanelMenu</div>
                     <p-panelmenu [model]="panelMenuItems" />
                 </div>

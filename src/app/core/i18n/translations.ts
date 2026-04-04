@@ -18,6 +18,7 @@ const en: TranslationTable = {
 
     'card.maximize': 'Maximize',
     'card.restore': 'Restore',
+    'card.close': 'Close',
 
     'topbar.calendar': 'Calendar',
     'topbar.messages': 'Messages',
@@ -289,6 +290,7 @@ const tr: TranslationTable = {
 
     'card.maximize': 'Büyüt',
     'card.restore': 'Geri Yükle',
+    'card.close': 'Kapat',
 
     'topbar.calendar': 'Takvim',
     'topbar.messages': 'Mesajlar',
@@ -532,6 +534,7 @@ const fr: TranslationTable = {
 
     'card.maximize': 'Agrandir',
     'card.restore': 'Restaurer',
+    'card.close': 'Fermer',
 
     'topbar.calendar': 'Calendrier',
     'topbar.messages': 'Messages',
@@ -759,6 +762,7 @@ const de: TranslationTable = {
 
     'card.maximize': 'Maximieren',
     'card.restore': 'Wiederherstellen',
+    'card.close': 'Schließen',
 
     'topbar.calendar': 'Kalender',
     'topbar.messages': 'Nachrichten',

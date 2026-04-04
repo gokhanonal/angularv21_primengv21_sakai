@@ -32,7 +32,7 @@ const MAX_BYTES = 1048576;
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12 lg:col-span-8 xl:col-span-6">
-                <div class="card flex flex-col gap-6" appCardMaximize>
+                <div class="card flex flex-col gap-6" appCardMaximize [showWindowMaximize]="true">
                     <div>
                         <h3 class="card-title">{{ 'profile.title' | t }}</h3>
                         <p class="text-muted-color m-0">{{ 'profile.subtitle' | t }}</p>

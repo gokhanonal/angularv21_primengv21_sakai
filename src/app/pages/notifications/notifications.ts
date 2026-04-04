@@ -12,7 +12,7 @@ type ReadFilter = 'all' | 'unread' | 'read';
     standalone: true,
     imports: [CommonModule, NotificationDetail, CardMaximizeDirective],
     template: `
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="card-header">
                 <div class="card-heading">
                     <h3 class="card-title">All Notifications</h3>

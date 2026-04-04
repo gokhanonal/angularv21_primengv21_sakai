@@ -13,7 +13,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     selector: 'app-media-demo',
     standalone: true,
     imports: [CommonModule, CarouselModule, ButtonModule, GalleriaModule, ImageModule, TagModule, CardMaximizeDirective],
-    template: `<div class="card" appCardMaximize>
+    template: `<div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Carousel</div>
             <p-carousel [value]="products()" [numVisible]="3" [numScroll]="3" [circular]="false" [responsiveOptions]="carouselResponsiveOptions">
                 <ng-template let-product #item>
@@ -39,12 +39,12 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </p-carousel>
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Image</div>
             <p-image src="https://primefaces.org/cdn/primeng/images/galleria/galleria10.jpg" alt="Image" width="250" />
         </div>
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl mb-4">Galleria</div>
             <p-galleria [value]="images()" [responsiveOptions]="galleriaResponsiveOptions" [containerStyle]="{ 'max-width': '640px' }" [numVisible]="5">
                 <ng-template #item let-item>

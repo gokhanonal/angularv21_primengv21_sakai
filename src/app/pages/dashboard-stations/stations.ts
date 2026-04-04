@@ -59,7 +59,7 @@ interface StationKpiCard {
 
             <div class="flex flex-col lg:flex-row gap-4">
                 @if (loading()) {
-                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize>
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize [showWindowMaximize]="true">
                         <p-skeleton width="100%" height="380px" styleClass="rounded-none" />
                     </div>
                     <div
@@ -70,7 +70,7 @@ interface StationKpiCard {
                         }
                     </div>
                 } @else {
-                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize>
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize [showWindowMaximize]="true">
                         <div class="relative overflow-hidden">
                             @if (!loadError() && uniqueStatuses().length > 0) {
                                 <div
@@ -147,7 +147,7 @@ interface StationKpiCard {
         </div>
 
         @if (loading()) {
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true"> 
                 <p-skeleton width="10rem" height="1.5rem" styleClass="mb-4" />
                 @for (rowIdx of skeletonPlaceholders; track rowIdx) {
                     <div class="flex gap-4 mb-3">
@@ -157,7 +157,7 @@ interface StationKpiCard {
                 }
             </div>
         } @else if (!loadError()) {
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true" [showClose]="true">
                 <div class="font-semibold text-xl mb-4">{{ 'stations.tableTitle' | t }}</div>
                 <p-table
                     #stationsDt

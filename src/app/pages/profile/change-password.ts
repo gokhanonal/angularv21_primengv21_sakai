@@ -20,7 +20,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12 lg:col-span-8 xl:col-span-6">
-                <div class="card flex flex-col gap-6" appCardMaximize>
+                <div class="card flex flex-col gap-6" appCardMaximize [showWindowMaximize]="true">
                     <div>
                         <div class="font-semibold text-xl mb-1">{{ 'profile.changePassword.title' | t }}</div>
                         <p class="text-muted-color m-0">{{ 'profile.changePassword.subtitle' | t }}</p>

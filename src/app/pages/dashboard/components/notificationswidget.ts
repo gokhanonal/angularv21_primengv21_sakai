@@ -7,12 +7,12 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     standalone: true,
     selector: 'app-notifications-widget',
     imports: [ButtonModule, MenuModule, CardMaximizeDirective],
-    template: `<div class="card" appCardMaximize>
-        <div class="flex items-center justify-between mb-6">
+    template: `<div class="card" appCardMaximize [showWindowMaximize]="true">
+        <div class="card-header items-center mb-6">
             <div class="font-semibold text-xl">Notifications</div>
-            <div>
+            <div class="card-actions">
                 <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-rounded p-button-text p-button-plain" (click)="menu.toggle($event)"></button>
-                <p-menu #menu [popup]="true" [model]="items"></p-menu>
+                <p-menu #menu [popup]="true" [model]="items" appendTo="body"></p-menu>
             </div>
         </div>
 

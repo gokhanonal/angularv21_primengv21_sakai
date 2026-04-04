@@ -473,3 +473,243 @@ Create a **reusable grid state persistence service** under `src/app/core/` that 
 
 - **Build:** `ng build` (project standard).
 - **Manual:** Maximize/restore on station-management + one dashboard widget + one form page; open **p-menu** / **dialog** from inside maximized card; **Escape**; narrow viewport; **two cards** with directive on same page (stacking rule).
+
+## Bug-fix: Cards with `...` (ellipsis) menus render poorly — menu should anchor under the trigger
+
+### Summary (BA)
+
+**Problem:** After `appCardMaximize` was applied app-wide, dashboard widget cards that already expose a **top-right ellipsis** (`pi pi-ellipsis-v`) + `p-menu` no longer present a clean layout. The directive sets **`position: relative`** on the card host and injects a **maximize toggle** at **`position: absolute; top: 0.75rem; right: 0.75rem; z-index: 1`**, which **overlaps** the existing menu trigger. Users see a **visual collision**; the **popup menu may not appear correctly anchored** under the `...` button because the card’s new **stacking context** (`position: relative` on the host) can affect overlay positioning for menus that are not portaled to `body` (or when append-to behavior differs).
+
+**Desired outcome:** The **ellipsis menu opens directly under** the `...` control (expected PrimeNG popup behavior), and the **maximize control does not cover or steal clicks** from card header actions. No regression to maximize/restore, Escape, or backdrop behavior.
+
+**Assumptions:** Affected patterns include at least **bestsellingwidget**, **notificationswidget** (title row + `pButton` + `p-menu`), and **recentsaleswidget** (`card-header` / `card-actions`). Other cards with the same top-right action pattern are in scope for verification.
+
+### Root cause (behavior-level)
+
+1. **Spatial conflict:** The maximize toggle and the ellipsis button both target the **same corner** of the card; absolute positioning with **`right: 0.75rem`** places the toggle **on top of** or **beside** the menu trigger in a way that breaks the intended header layout.
+2. **Stacking / containing block:** **`position: relative`** on the card establishes a **containing block** and stacking context for descendants; **`p-menu`** popup positioning relative to the trigger can be **offset or clipped** compared to pre-directive behavior, so the menu no longer appears **just under** the `...`.
+
+### Functional requirements (bug scope)
+
+- **BFR-1:** The **ellipsis** (or equivalent header action) control shall remain **fully visible, reachable, and clickable** without being covered by the maximize toggle.
+- **BFR-2:** Activating the **menu** shall show the popup **anchored to the trigger** (under/near the `...` per PrimeNG defaults), not displaced by the card host’s layout or obscured behind the wrong layer.
+- **BFR-3:** **Maximize** behavior (toggle, overlay, z-index vs dialogs, Escape, backdrop) shall **not regress** except where explicitly adjusted to satisfy BFR-1–BFR-2.
+
+### Fix approach (engineering direction — ordered by practicality)
+
+1. **Simplest practical fix (fast):** Increase horizontal offset of the maximize toggle so the **far-right** remains reserved for the menu — e.g. **`right: 3rem`** or **`right: 3.5rem`** (tune to theme button width + gap). Validate on **rounded text** buttons and **dense** headers.
+2. **Better integration (preferred if simple CSS is insufficient):** When markup uses **`.card-header` / `.card-actions`** (or a detectable action cluster), **place the toggle to the left of** existing actions (or **inject the toggle into** the action row) so both controls share one **toolbar** row instead of two absolutes in one corner.
+3. **Avoid** pushing the toggle **outside** the card padding as the default (fragile on small viewports); only consider if product accepts overflow.
+
+### Non-functional (bug scope)
+
+- **Accessibility:** Both controls keep distinct **focus targets** and **visible hit areas**; no accidental focus order traps.
+- **Responsive:** At narrow widths, **no overlap** between maximize and `...` (or document acceptable wrap/stacking).
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected |
+|----------|----------|
+| **Two+ header actions** (ellipsis + future icon) | Toggle leaves room for **all** actions in the corner or joins **card-actions** row. |
+| **Card without** `...` | Toggle remains **top-right** with default **`right: 0.75rem`** if engineering implements **conditional offset** only when needed — or uniform offset if visually acceptable everywhere. |
+| **`p-menu` with `appendTo="body"`** (if adopted) | Popup still aligns to trigger; verify **no** duplicate stacking issues with maximized overlay. |
+| **Maximized card** | Menu from inside card still usable; **z-index** contract from parent feature remains satisfied. |
+
+### Acceptance criteria
+
+- [x] On **bestselling** and **notifications** widgets, the **`...`** is **not** covered by the maximize icon; both are usable.
+- [x] Opening the menu positions the panel **under** (or immediately adjacent per theme to) the **`...`** trigger — **not** shifted to the wrong corner or clipped inside the card in a way that hides items.
+- [x] **recentsaleswidget** (or any **`card-actions`** card) passes the same checks.
+- [x] **Smoke:** Maximize/restore, **Escape**, backdrop click, and **one dialog/menu from maximized card** still behave per the card-maximize feature spec.
+- [x] **`ng build`** succeeds; visual check at **~375px** width optional but recommended.
+
+### Open questions
+
+1. **Blocking — Uniform vs conditional offset:** Is a **global** `right: 3rem` (or similar) for **all** cards acceptable, or must **cards without** menus keep **`0.75rem`**? *(Product/UX: slight asymmetry on simple cards vs one rule for all.)*
+2. **Nice-to-know — Portal target:** Should **`p-menu`** on these widgets use **`appendTo="body"`** (or project standard) to **decouple** popup positioning from the card’s containing block? *(Engineering trade-off vs markup churn.)*
+
+### Out of scope (this bug-fix)
+
+- Redesigning dashboard widget headers beyond **collision** and **menu anchor** fixes.
+- Changing **menu model** items or business logic.
+- New card-maximize features (keyboard shortcut, persistence).
+
+### Handoff to engineering
+
+- Inspect **`CardMaximizeDirective`** host styles (`position: relative`) and **`.card-maximize-toggle`** SCSS; prototype **`right` offset** and/or **DOM placement** next to **`.card-actions`**.
+- Verify **`p-menu`** `popup` positioning on affected widgets (DevTools + maximized/normal states).
+- Add or extend **unit/DOM tests** only if the project already tests directive layout; otherwise **manual QA checklist** above is the definition of done.
+
+### Validation
+
+- Manual: dashboard widgets listed above — open menu **before and after** maximize; narrow viewport spot-check.
+
+## Card overlay controls: always top-right, `showWindowMaximize` + `showClose`
+
+### Summary
+
+**Problem:** The maximize/restore toggle is sometimes injected into `.card-actions` or otherwise participates in flex layout, which reserves space and ties placement to header patterns. Stakeholders want the control to behave like a **dialog chrome** control: **always** `position: absolute` at the **top-right** of the card host, **floating over** title and body (including when `.card-actions` is absent), with **no extra layout slot** reserved.
+
+**Desired outcome:** `CardMaximizeDirective` exposes **`showWindowMaximize`** — when truthy, the maximize/minimize icon appears in that overlay corner; when falsy, no toggle is shown. A second flag **`showClose`** shows an **X** button in the same corner region. When both are true, **both** buttons appear **side by side** (outermost = product default, typically close rightmost to match dialogs). **Close** does not imply a single global behavior: the directive shall **emit an event** and let the parent hide/remove/navigate as needed.
+
+**Assumptions:** Existing maximize behavior (fixed overlay, backdrop, Escape, single-instance stacking, router restore) stays unless this task explicitly changes it. ~31 card templates that use `appCardMaximize` will need binding updates for `showWindowMaximize` (default can be `true` for parity during migration, or `false` until opted in — **product choice**, see open questions).
+
+### Functional requirements
+
+1. **FR-1 — Placement (no `.card-actions` insertion)**  
+   Maximize and close controls shall **not** be inserted as children of `.card-actions`. They shall be anchored to the **card host** with **`position: absolute`**, top-right, **`z-index`** above header/title content so they paint **over** the title bar and body. **No** additional width/height reserved in the document flow for these buttons (no flex gap solely for them).
+
+2. **FR-2 — `showWindowMaximize`**  
+   When **`showWindowMaximize` is true** (truthy), render the existing maximize/restore toggle. When **false**, do not render the toggle; maximize behavior is unavailable unless another API is added (out of scope).
+
+3. **FR-3 — `showClose`**  
+   When **`showClose` is true**, render an icon-only **close** control (e.g. `pi pi-times`) in the top-right overlay cluster. When **false**, do not render it.
+
+4. **FR-4 — Both visible**  
+   When both inputs are true, **both** controls are visible, **non-overlapping**, with consistent spacing (e.g. horizontal stack inset from the right edge). Order should match common dialog patterns unless UX specifies otherwise (**default: maximize to the left of close**, close flush right).
+
+5. **FR-5 — Close semantics (default)**  
+   Clicking **close** shall **`emit` a single event** (e.g. `close` / `closed` via `output()` or `@Output()`). The directive **does not** remove the host from the DOM or hide the card by default — **parent** decides (`*ngIf`, router, service, etc.). Document this in the directive’s public API.
+
+6. **FR-6 — i18n**  
+   New user-visible strings (close button `aria-label` / tooltip) shall use **`I18nService` / `TranslatePipe`** for **en/tr/fr/de**.
+
+### Non-functional (BA level)
+
+- **Accessibility:** Each overlay button is focusable, has a non-empty **accessible name**, and **tab order** remains predictable (typically close after maximize in DOM order if maximize is left of close).
+- **Responsive:** On **narrow** cards/viewports, buttons remain usable (minimum touch target, optional overlap mitigation — see edge cases).
+- **Regression:** Ellipsis/`p-menu` and other top-right header controls may **overlap** with overlay buttons; product accepts overlap risk **or** follow-up to offset header actions — call out in edge cases (differs from prior bug-fix that avoided collision via placement).
+
+### What “close” means (product default)
+
+| Approach | Recommendation |
+|----------|----------------|
+| **Emit only** | **Default:** `OutputEmitterRef` / `@Output() close` — parent handles dismissal. |
+| **Directive removes host** | Rejected as default (surprising, breaks forms/tables inside card). |
+| **CSS hide only** | Optional pattern for parent via `*ngIf` on wrapper; not required inside directive. |
+
+### Acceptance criteria
+
+- [x] With **`showWindowMaximize=true`** and **`showClose=false`**, toggle appears **top-right**, **absolute**, **over** title/content; **not** inside `.card-actions`; **no** extra header row height for the button alone.
+- [x] With **`showWindowMaximize=false`**, **no** maximize control is rendered; card does not advertise maximize (unless documented exception).
+- [x] With **`showClose=true`**, close (X) appears; **click** emits **one** close event; parent can observe and react.
+- [x] With **both true**, both buttons visible, **side by side**, **no** mutual occlusion at typical dashboard card widths.
+- [x] **Maximized** state: existing restore/Escape/backdrop rules still work; close button remains available and **directly emits close** without auto-restoring — parent decides.
+- [x] Cards **with** and **without** `.card-header` / `.card-actions` behave **the same** regarding control placement.
+- [x] **`ng build`** succeeds; **i18n** keys for close affordance in **en/tr/fr/de**.
+
+### Implementation breakdown
+
+- [x] **(a)** Change **`CardMaximizeDirective`**: render control(s) in a single **absolute** `.card-controls` wrapper on the host; never insert into `.card-actions`.
+- [x] **(b)** Add inputs **`showWindowMaximize`** (default `false`), **`showClose`** (default `false`); conditionally create/destroy button nodes.
+- [x] **(c)** Add close button markup + **`output() closed`**; wire **click** → emit; **stopPropagation**.
+- [x] **(d)** Update **`_card-maximize.scss`**: `.card-controls` wrapper, `.card-close-btn` styles; removed old `.card-actions` override.
+- [x] **(e)** Migrate **31** card templates: add `[showWindowMaximize]="true"` to maintain existing behavior.
+- [x] **(f)** **`translations.ts`**: added **`card.close`** in en/tr/fr/de.
+- [x] **(g)** **Unit tests**: inputs gate rendering; close emits; both buttons side-by-side; close while maximized emits without auto-restoring; disabling maximize while maximized auto-restores.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **Both buttons + existing `...` menu** | May **overlap** top-right; UX accepts or parent sets **`showClose`** false / moves menu — document. |
+| **Very narrow card** | Buttons shrink gap or allow slight overlap; must not break **focus** or **click** targets below minimum. |
+| **Close while maximized** | Define: emit close only vs auto-restore then emit — **blocking** product choice. |
+| **Only `showClose` true** | Close shows; no maximize toggle; card never maximizes via directive. |
+| **Router navigation while maximized** | Unchanged: restore per existing spec. |
+| **SSR** | Browser-only DOM creation unchanged; guards preserved. |
+
+### i18n keys needed
+
+- **`card.close`** — short label for tooltip/aria on the X button (en/tr/fr/de).  
+- Reuse existing **`card.maximize`** / **`card.restore`** (or current keys) for maximize toggle; add only if missing.
+
+### Resolved questions
+
+1. **Default values:** Both **`showWindowMaximize`** and **`showClose`** default to **`false`** (explicit opt-in). All 31 existing card templates updated with `[showWindowMaximize]="true"`.
+2. **Close when maximized:** **Directly emit close** without auto-restoring. Parent decides how to handle.
+3. **Button order:** **Close is rightmost** (maximize left, close right — matches standard dialog patterns).
+
+### Out of scope
+
+- Replacing **`appCardMaximize`** with a **`p-card`** wrapper component.
+- **Built-in** “hide card” animation or **localStorage** “dismissed cards”.
+- Changing **backdrop click** or **Escape** behavior except where required by close/maximize interaction decisions above.
+- **PrimeNG** `Dialog` parity (focus trap, role=dialog) — card remains a card, not a modal dialog component.
+
+### Validation
+
+- Manual: one **`.card-actions`** card, one **plain** card, **both flags** combinations, **narrow** width, **maximized** + menu/dialog from content; **`ng build`**.
+
+
+## Card maximize: temporary close + hover/focus-visible controls
+
+### Summary
+
+**Problem:** Today, clicking the card **close** (X) only emits `closed`; the host stays visible unless the parent hides it. Overlay controls (maximize + close) are **always visible** when rendered, which adds visual noise.
+
+**Desired outcome:** (1) The directive **hides the card host** on close using **in-memory** styling only (e.g. `display: none` on the host); a **full page reload** shows the card again. The **`closed` output still fires** so parents can log or react. (2) **Maximize** and **close** appear only when the user is effectively “on” the card: **pointer hover** on the card, and **keyboard/sighted users** can still reach controls via **`:focus-within`** on the card so the control cluster is not stuck invisible while focused.
+
+**Assumptions:** No `localStorage` / `sessionStorage` for dismissed cards. Existing opt-in flags (`showWindowMaximize`, `showClose`) unchanged. **Product update vs prior “close while maximized” note:** if the user closes while **maximized**, the directive shall **restore first** (clear fixed overlay/backdrop/state), **then** hide the host — so the shell is not left in a maximized-card state with a hidden host.
+
+### Functional requirements
+
+1. **FR-1 — Built-in temporary hide on close**  
+   On close button click, the directive shall set the **host element** to a non-visible state (e.g. `display: none` or equivalent that removes it from layout and accessibility tree appropriately). **No** persistence across reloads or navigation unless separately specified.
+
+2. **FR-2 — `closed` output preserved**  
+   The directive shall **still emit `closed`** after (or as part of) the same user action, in an order consistent with restore-then-hide when maximized (see edge cases).
+
+3. **FR-3 — Restore-then-hide when maximized**  
+   If the card is **maximized** when close is activated, the directive shall **exit maximize** (backdrop, fixed positioning, internal state, single-instance stacking) **before** applying host hide, so no orphaned overlay/backdrop remains.
+
+4. **FR-4 — Hover + focus-within visibility**  
+   The `.card-controls` cluster shall be **hidden by default** and **shown** when the **card host** matches **`:hover`** **or** **`:focus-within`** (SCSS on the card/host wrapper — not only `:hover`, so keyboard focus on a control keeps buttons visible).
+
+5. **FR-5 — Touch / no-hover devices**  
+   Document: **pure `:hover`** does not fire on many touch UIs; **`:focus-within`** helps when the user tabs into a control if focus can reach it — if controls are fully hidden with `opacity: 0` / `visibility` and not tab-reachable until visible, engineering must ensure **at least one** discoverable path (e.g. focus-within on card after first interaction, or visible-on-first-tap — see open questions).
+
+### Non-functional (BA level)
+
+- **Accessibility:** Hiding the host on close should not leave **focus** on a removed/hidden subtree; focus should move to a **safe** target (document body or next focusable — engineering detail). Controls when visible retain **labels/tooltips** per existing i18n.
+- **Regression:** Maximize/restore, Escape, backdrop, and stacking rules remain except where **FR-3** explicitly orders restore before hide on close.
+
+### Acceptance criteria
+
+- [x] With **`showClose=true`**, clicking **close** hides the **entire card host** immediately in the current session; **reload** shows the card again with controls in default state.
+- [x] **`closed` emits** on close; parent handlers still run if bound.
+- [x] Close while **maximized**: user sees **restore** behavior first (no stray backdrop/fixed layer), then card disappears.
+- [x] With **`showWindowMaximize` and/or `showClose`**, `.card-controls` is **not** visibly prominent until **hover** on the card **or** **focus-within** the card (keyboard user can tab to toggle/close and see them).
+- [x] **`ng build`** succeeds; **`card-maximize.directive.spec.ts`** updated for hide-on-close, restore-then-hide, and visibility rules if testable without brittle DOM.
+
+### Implementation breakdown
+
+- [x] **(a) Directive (`card-maximize.directive.ts`)** — On close: if maximized, run existing **restore** path first; then apply **host hide** (`display: none`). Emit **`closed`**. Blur focus so it's not trapped on hidden content.
+- [x] **(b) SCSS (`_card-maximize.scss`)** — Default: `.card-controls` hidden (`opacity: 0`, `pointer-events: none`). Show when host **`:hover`** or **`:focus-within`**, always show when card is maximized (`.card--maximized > .card-controls`), always show on touch devices (`@media (hover: none)`).
+- [x] **(c) Tests (`card-maximize.directive.spec.ts`)** — Cover: close hides host (`display: none`); close when maximized restores then hides; `closed` still emitted.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **Close while maximized** | **Restore first**, then hide host; emit `closed`. |
+| **Touch / mobile — no hover** | Controls may stay hidden until **focus** enters card or user discovers **tap target**; **`:focus-within`** mitigates **keyboard**; **pointer-only hover** is insufficient on touch — document UX gap or follow-up (e.g. always show on small breakpoint — **open question**). |
+| **Keyboard: controls hidden until hover** | **`:focus-within`** on card must reveal `.card-controls` so tabbing to maximize/close is possible; verify **tab order** and **visible focus ring**. |
+| **Screen reader** | Hidden host should not retain **aria-hidden** mistakes; closing moves context — ensure **live region** not required unless product asks (out of scope unless specified). |
+| **Multiple cards** | Hiding one card does not affect another; **single maximized** rule: closing maximized card clears global maximize state then hides. |
+| **Parent `*ngIf` / route** | Directive hide is **CSS/DOM state on host**; parent can still remove component — **no conflict** if parent destroys host (cleanup in `ngOnDestroy` as today). |
+
+### Open questions
+
+1. **Nice-to-know — Touch default** Should **narrow viewports** or **coarse pointer** media queries **always show** controls to avoid undiscoverable chrome? *(Default in BA: document gap; engineering may propose `@media (hover: none)` fallback.)*
+
+### Out of scope
+
+- **Persisting** “dismissed” cards (`localStorage`, user preferences API).
+- **Animate** dismiss or **undo** snackbar to reopen card.
+- Changing **close** to mean **navigate away** or **remove from `*ngIf`** — parent may still do that in addition to directive hide if double-handling is avoided by product.
+- **PrimeNG** dialog parity (focus trap, `role="dialog"`) for the card shell.
+
+### Validation
+
+- Manual: card with both flags — hover shows controls, tab into card shows controls, close hides, reload restores; **maximized + close** leaves no backdrop; **`ng build`**.

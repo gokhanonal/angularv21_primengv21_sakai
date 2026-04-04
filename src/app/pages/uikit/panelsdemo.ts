@@ -42,7 +42,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     ],
     template: `
         <div class="flex flex-col">
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Toolbar</div>
                 <p-toolbar>
                     <ng-template #start>
@@ -66,7 +66,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
 
             <div class="flex flex-col md:flex-row gap-8">
                 <div class="md:w-1/2">
-                    <div class="card" appCardMaximize>
+                    <div class="card" appCardMaximize [showWindowMaximize]="true">
                         <div class="font-semibold text-xl mb-4">Accordion</div>
                         <p-accordion value="0">
                             <p-accordion-panel value="0">
@@ -103,7 +103,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                             </p-accordion-panel>
                         </p-accordion>
                     </div>
-                    <div class="card" appCardMaximize>
+                    <div class="card" appCardMaximize [showWindowMaximize]="true">
                         <div class="font-semibold text-xl mb-4">Tabs</div>
                         <p-tabs value="0">
                             <p-tablist>
@@ -138,7 +138,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     </div>
                 </div>
                 <div class="md:w-1/2 mt-6 md:mt-0">
-                    <div class="card" appCardMaximize>
+                    <div class="card" appCardMaximize [showWindowMaximize]="true">
                         <div class="font-semibold text-xl mb-4">Panel</div>
                         <p-panel header="Header" [toggleable]="true">
                             <p class="m-0">
@@ -148,7 +148,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                             </p>
                         </p-panel>
                     </div>
-                    <div class="card" appCardMaximize>
+                    <div class="card" appCardMaximize [showWindowMaximize]="true">
                         <div class="font-semibold text-xl mb-4">Fieldset</div>
                         <p-fieldset legend="Legend" [toggleable]="true">
                             <p class="m-0">
@@ -161,7 +161,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
 
-            <div class="card mt-8" appCardMaximize>
+            <div class="card mt-8" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Divider</div>
                 <div class="flex flex-col md:flex-row">
                     <div class="w-full md:w-5/12 flex flex-col items-center justify-center gap-3 py-5">
@@ -187,7 +187,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
 
-            <div class="card" appCardMaximize>
+            <div class="card" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl mb-4">Splitter</div>
                 <p-splitter [style]="{ height: '300px' }" [panelSizes]="[20, 80]" [minSizes]="[10, 0]" styleClass="mb-8">
                     <ng-template #panel>

@@ -7,7 +7,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     selector: 'app-stats-widget',
     imports: [CommonModule, CardMaximizeDirective],
     template: `<div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0" appCardMaximize>
+            <div class="card mb-0" appCardMaximize [showWindowMaximize]="true">
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Orders</span>
@@ -22,7 +22,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0" appCardMaximize>
+            <div class="card mb-0" appCardMaximize [showWindowMaximize]="true">
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Revenue</span>
@@ -37,7 +37,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0" appCardMaximize>
+            <div class="card mb-0" appCardMaximize [showWindowMaximize]="true">
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Customers</span>
@@ -52,7 +52,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0" appCardMaximize>
+            <div class="card mb-0" appCardMaximize [showWindowMaximize]="true">
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Comments</span>

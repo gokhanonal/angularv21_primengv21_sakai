@@ -67,7 +67,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     ],
     template: ` <p-fluid class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">InputText</div>
                     <div class="flex flex-col md:flex-row gap-4">
                         <input pInputText type="text" placeholder="Default" />
@@ -104,7 +104,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-inputnumber [(ngModel)]="inputNumberValue" showButtons mode="decimal"></p-inputnumber>
                 </div>
 
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">Slider</div>
                     <input pInputText [(ngModel)]="sliderValue" type="number" />
                     <p-slider [(ngModel)]="sliderValue" />
@@ -125,7 +125,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">RadioButton</div>
                     <div class="flex flex-col md:flex-row gap-4">
                         <div class="flex items-center">
@@ -162,7 +162,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-toggleswitch [(ngModel)]="switchValue" />
                 </div>
 
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">Listbox</div>
                     <p-listbox [(ngModel)]="listboxValue" [options]="listboxValues" optionLabel="name" [filter]="true" />
 
@@ -191,7 +191,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     <p-treeselect [(ngModel)]="selectedNode" [options]="treeSelectNodes" placeholder="Select Item"></p-treeselect>
                 </div>
 
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">ToggleButton</div>
                     <p-togglebutton [(ngModel)]="toggleValue" onLabel="Yes" offLabel="No" [style]="{ width: '10em' }" />
 
@@ -202,7 +202,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
         </p-fluid>
 
         <p-fluid class="flex mt-8">
-            <div class="card flex flex-col gap-6 w-full" appCardMaximize>
+            <div class="card flex flex-col gap-6 w-full" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">InputGroup</div>
                 <div class="flex flex-col md:flex-row gap-6">
                     <p-inputgroup>

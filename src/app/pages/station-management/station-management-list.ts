@@ -149,7 +149,7 @@ function escapeHtmlText(value: string): string {
             <p-button [label]="'stationMgmt.retry' | t" icon="pi pi-refresh" (onClick)="reload()" class="mb-4" />
         }
 
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             @if (pageTitleText()) {
                 <h3 class="card-title mb-1">{{ pageTitleText() }}</h3>
             }

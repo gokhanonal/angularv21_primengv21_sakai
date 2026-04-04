@@ -15,7 +15,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     standalone: true,
     imports: [CommonModule, DataViewModule, FormsModule, SelectButtonModule, PickListModule, OrderListModule, TagModule, ButtonModule, CardMaximizeDirective],
     template: ` <div class="flex flex-col">
-        <div class="card" appCardMaximize>
+        <div class="card" appCardMaximize [showWindowMaximize]="true">
             <div class="font-semibold text-xl">DataView</div>
             <p-dataview [value]="products" [layout]="layout">
                 <ng-template #header>
@@ -128,7 +128,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
 
         <div class="flex flex-col lg:flex-row gap-20">
             <div class="lg:w-2/3">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">PickList</div>
                     <p-pick-list [source]="sourceCities" [target]="targetCities" breakpoint="1400px">
                         <ng-template #item let-item>
@@ -139,7 +139,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
             </div>
 
             <div class="lg:w-1/3">
-                <div class="card" appCardMaximize>
+                <div class="card" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl mb-4">OrderList</div>
                     <p-orderlist [value]="orderCities" dataKey="id" breakpoint="575px">
                         <ng-template #option let-option>

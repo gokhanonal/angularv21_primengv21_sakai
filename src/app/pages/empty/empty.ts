@@ -5,7 +5,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     selector: 'app-empty',
     standalone: true,
     imports: [CardMaximizeDirective],
-    template: ` <div class="card" appCardMaximize>
+    template: ` <div class="card" appCardMaximize [showWindowMaximize]="true">
         <div class="font-semibold text-xl mb-4">Empty Page</div>
         <p>Use this page to start from scratch and place your custom content.</p>
     </div>`

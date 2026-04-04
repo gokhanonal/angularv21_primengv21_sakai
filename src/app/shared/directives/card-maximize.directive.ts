@@ -7,7 +7,9 @@ import {
     PLATFORM_ID,
     Renderer2,
     effect,
-    inject
+    inject,
+    input,
+    output
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { I18nService } from '@/app/core/i18n/i18n.service';
@@ -24,18 +26,28 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
     private readonly i18n = inject(I18nService);
     private readonly platformId = inject(PLATFORM_ID);
 
+    readonly showWindowMaximize = input(false);
+    readonly showClose = input(false);
+    readonly closed = output<void>();
+
     private maximized = false;
-    private toggleBtn: HTMLButtonElement | null = null;
-    private iconEl: HTMLElement | null = null;
+    private initialized = false;
+    private controlsWrapper: HTMLElement | null = null;
+    private maximizeBtn: HTMLButtonElement | null = null;
+    private maximizeIconEl: HTMLElement | null = null;
+    private closeBtn: HTMLButtonElement | null = null;
     private backdropEl: HTMLElement | null = null;
     private backdropClickUnlisten: (() => void) | null = null;
-    private toggleClickUnlisten: (() => void) | null = null;
+    private maximizeClickUnlisten: (() => void) | null = null;
+    private closeClickUnlisten: (() => void) | null = null;
 
     constructor() {
         effect(() => {
+            const showMax = this.showWindowMaximize();
+            const showClose = this.showClose();
             this.i18n.lang();
-            if (this.toggleBtn) {
-                this.updateButtonState();
+            if (this.initialized) {
+                this.syncControls(showMax, showClose);
             }
         });
     }
@@ -45,17 +57,21 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
             return;
         }
         this.renderer.setStyle(this.el.nativeElement, 'position', 'relative');
-        this.createToggleButton();
+        this.initialized = true;
+        this.syncControls(this.showWindowMaximize(), this.showClose());
     }
 
     ngOnDestroy(): void {
         if (this.maximized) {
             this.restore();
         }
-        this.removeToggleButton();
+        this.destroyMaximizeBtn();
+        this.destroyCloseBtn();
+        this.destroyControlsWrapper();
         if (isPlatformBrowser(this.platformId)) {
             this.renderer.removeStyle(this.el.nativeElement, 'position');
         }
+        this.initialized = false;
     }
 
     @HostListener('document:keydown.escape')
@@ -69,42 +85,122 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
         this.restore();
     }
 
-    private createToggleButton(): void {
+    private syncControls(showMax: boolean, showClose: boolean): void {
+        if (!showMax && !showClose) {
+            this.destroyMaximizeBtn();
+            this.destroyCloseBtn();
+            this.destroyControlsWrapper();
+            return;
+        }
+
+        this.ensureControlsWrapper();
+
+        if (showMax && !this.maximizeBtn) {
+            this.createMaximizeBtn();
+        } else if (!showMax && this.maximizeBtn) {
+            if (this.maximized) {
+                this.restore();
+            }
+            this.destroyMaximizeBtn();
+        }
+        this.updateMaximizeBtnState();
+
+        if (showClose && !this.closeBtn) {
+            this.createCloseBtn();
+        } else if (!showClose && this.closeBtn) {
+            this.destroyCloseBtn();
+        }
+        this.updateCloseBtnState();
+    }
+
+    private ensureControlsWrapper(): void {
+        if (this.controlsWrapper) {
+            return;
+        }
+        const wrapper = this.renderer.createElement('div') as HTMLElement;
+        this.renderer.addClass(wrapper, 'card-controls');
+        this.renderer.appendChild(this.el.nativeElement, wrapper);
+        this.controlsWrapper = wrapper;
+    }
+
+    private destroyControlsWrapper(): void {
+        if (!this.controlsWrapper) {
+            return;
+        }
+        this.renderer.removeChild(this.el.nativeElement, this.controlsWrapper);
+        this.controlsWrapper = null;
+    }
+
+    private createMaximizeBtn(): void {
+        if (!this.controlsWrapper) {
+            return;
+        }
         const btn = this.renderer.createElement('button') as HTMLButtonElement;
         btn.type = 'button';
-        for (const c of [
-            'p-button',
-            'p-button-text',
-            'p-button-rounded',
-            'p-button-icon-only',
-            'card-maximize-toggle'
-        ]) {
+        for (const c of ['p-button', 'p-button-text', 'p-button-rounded', 'p-button-icon-only', 'card-maximize-toggle']) {
             this.renderer.addClass(btn, c);
         }
         const icon = this.renderer.createElement('i') as HTMLElement;
         this.renderer.addClass(icon, 'pi');
         this.renderer.addClass(icon, 'pi-window-maximize');
         this.renderer.appendChild(btn, icon);
-        this.renderer.appendChild(this.el.nativeElement, btn);
-        this.toggleBtn = btn;
-        this.iconEl = icon;
-        this.toggleClickUnlisten = this.renderer.listen(btn, 'click', (e: Event) => {
+
+        if (this.closeBtn) {
+            this.renderer.insertBefore(this.controlsWrapper, btn, this.closeBtn);
+        } else {
+            this.renderer.appendChild(this.controlsWrapper, btn);
+        }
+
+        this.maximizeBtn = btn;
+        this.maximizeIconEl = icon;
+        this.maximizeClickUnlisten = this.renderer.listen(btn, 'click', (e: Event) => {
             e.stopPropagation();
             this.toggle();
         });
-        this.updateButtonState();
     }
 
-    private removeToggleButton(): void {
-        if (this.toggleClickUnlisten) {
-            this.toggleClickUnlisten();
-            this.toggleClickUnlisten = null;
+    private destroyMaximizeBtn(): void {
+        if (this.maximizeClickUnlisten) {
+            this.maximizeClickUnlisten();
+            this.maximizeClickUnlisten = null;
         }
-        if (this.toggleBtn) {
-            this.renderer.removeChild(this.el.nativeElement, this.toggleBtn);
-            this.toggleBtn = null;
-            this.iconEl = null;
+        if (this.maximizeBtn && this.controlsWrapper) {
+            this.renderer.removeChild(this.controlsWrapper, this.maximizeBtn);
         }
+        this.maximizeBtn = null;
+        this.maximizeIconEl = null;
+    }
+
+    private createCloseBtn(): void {
+        if (!this.controlsWrapper) {
+            return;
+        }
+        const btn = this.renderer.createElement('button') as HTMLButtonElement;
+        btn.type = 'button';
+        for (const c of ['p-button', 'p-button-text', 'p-button-rounded', 'p-button-icon-only', 'card-close-btn']) {
+            this.renderer.addClass(btn, c);
+        }
+        const icon = this.renderer.createElement('i') as HTMLElement;
+        this.renderer.addClass(icon, 'pi');
+        this.renderer.addClass(icon, 'pi-times');
+        this.renderer.appendChild(btn, icon);
+        this.renderer.appendChild(this.controlsWrapper, btn);
+        this.closeBtn = btn;
+        this.closeClickUnlisten = this.renderer.listen(btn, 'click', (e: Event) => {
+            e.stopPropagation();
+            this.hideCard();
+        });
+    }
+
+    private destroyCloseBtn(): void {
+        if (this.closeClickUnlisten) {
+            this.closeClickUnlisten();
+            this.closeClickUnlisten = null;
+        }
+        if (this.closeBtn && this.controlsWrapper) {
+            this.renderer.removeChild(this.controlsWrapper, this.closeBtn);
+        }
+        this.closeBtn = null;
     }
 
     private toggle(): void {
@@ -132,8 +228,8 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
         this.renderer.appendChild(document.body, backdrop);
         CardMaximizeDirective.activeInstance = this;
         this.maximized = true;
-        this.updateButtonState();
-        queueMicrotask(() => this.toggleBtn?.focus());
+        this.updateMaximizeBtnState();
+        queueMicrotask(() => this.maximizeBtn?.focus());
     }
 
     private restore(): void {
@@ -156,20 +252,39 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
             CardMaximizeDirective.activeInstance = null;
         }
         this.maximized = false;
-        this.updateButtonState();
-        queueMicrotask(() => this.toggleBtn?.focus());
+        this.updateMaximizeBtnState();
+        queueMicrotask(() => this.maximizeBtn?.focus());
     }
 
-    private updateButtonState(): void {
-        if (!this.toggleBtn || !this.iconEl) {
+    private updateMaximizeBtnState(): void {
+        if (!this.maximizeBtn || !this.maximizeIconEl) {
             return;
         }
         const label = this.i18n.t(this.maximized ? 'card.restore' : 'card.maximize');
-        this.renderer.setAttribute(this.toggleBtn, 'aria-label', label);
-        this.renderer.setAttribute(this.toggleBtn, 'title', label);
-        this.renderer.removeClass(this.iconEl, 'pi-window-maximize');
-        this.renderer.removeClass(this.iconEl, 'pi-window-minimize');
-        const icon = this.maximized ? 'pi-window-minimize' : 'pi-window-maximize';
-        this.renderer.addClass(this.iconEl, icon);
+        this.renderer.setAttribute(this.maximizeBtn, 'aria-label', label);
+        this.renderer.setAttribute(this.maximizeBtn, 'title', label);
+        this.renderer.removeClass(this.maximizeIconEl, 'pi-window-maximize');
+        this.renderer.removeClass(this.maximizeIconEl, 'pi-window-minimize');
+        this.renderer.addClass(this.maximizeIconEl, this.maximized ? 'pi-window-minimize' : 'pi-window-maximize');
+    }
+
+    private hideCard(): void {
+        if (this.maximized) {
+            this.restore();
+        }
+        this.renderer.setStyle(this.el.nativeElement, 'display', 'none');
+        this.closed.emit();
+        if (isPlatformBrowser(this.platformId)) {
+            (document.activeElement as HTMLElement)?.blur();
+        }
+    }
+
+    private updateCloseBtnState(): void {
+        if (!this.closeBtn) {
+            return;
+        }
+        const label = this.i18n.t('card.close');
+        this.renderer.setAttribute(this.closeBtn, 'aria-label', label);
+        this.renderer.setAttribute(this.closeBtn, 'title', label);
     }
 }

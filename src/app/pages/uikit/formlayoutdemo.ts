@@ -16,7 +16,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
     template: `<p-fluid>
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
 
                     <div class="card-header">
                         <div class="card-heading">
@@ -60,7 +60,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     </div>
                 </div>
 
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">Vertical Grid</div>
                     <div class="flex flex-wrap gap-6">
                         <div class="flex flex-col grow basis-0 gap-2">
@@ -75,8 +75,8 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4" appCardMaximize>
-                    <div class="font-semibold text-xl">Horizontal</div>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
+                    <h3 class="card-title">Horizantal Form Layout</h3>
                     <div class="grid grid-cols-12 gap-4 grid-cols-12 gap-2">
                         <label for="name3" class="flex items-center col-span-12 mb-2 md:col-span-2 md:mb-0">Name</label>
                         <div class="col-span-12 md:col-span-10">
@@ -91,7 +91,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                     </div>
                 </div>
 
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">Inline</div>
                     <div class="flex flex-wrap items-start gap-6">
                         <div class="field">
@@ -105,7 +105,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
                         <p-button label="Submit" [fluid]="false"></p-button>
                     </div>
                 </div>
-                <div class="card flex flex-col gap-4" appCardMaximize>
+                <div class="card flex flex-col gap-4" appCardMaximize [showWindowMaximize]="true">
                     <div class="font-semibold text-xl">Help Text</div>
                     <div class="flex flex-wrap gap-2">
                         <label for="username">Username</label>
@@ -117,7 +117,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.dir
         </div>
 
         <div class="flex mt-8">
-            <div class="card flex flex-col gap-6 w-full" appCardMaximize>
+            <div class="card flex flex-col gap-6 w-full" appCardMaximize [showWindowMaximize]="true">
                 <div class="font-semibold text-xl">Advanced</div>
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="flex flex-wrap gap-2 w-full">
