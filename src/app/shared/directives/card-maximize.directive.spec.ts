@@ -1,17 +1,18 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { CardMaximizeDirective } from './card-maximize.directive';
 
 @Component({
-    template: '<div class="card" appCardMaximize [showWindowMaximize]="showMax" [showClose]="showClose" (closed)="onClosed()">Content</div>',
+    template:
+        '<div class="card" appCardMaximize [showWindowMaximize]="showMax()" [showClose]="showClose()" (closed)="onClosed()">Content</div>',
     standalone: true,
     imports: [CardMaximizeDirective]
 })
 class TestHostComponent {
-    showMax = true;
-    showClose = false;
+    readonly showMax = signal(true);
+    readonly showClose = signal(false);
     closedCount = 0;
     onClosed(): void {
         this.closedCount++;
@@ -41,6 +42,12 @@ describe('CardMaximizeDirective', () => {
         return hostEl().querySelector('.card-close-btn');
     }
 
+    /** Flush signal effects (directive uses `effect`) to avoid NG0100 in tests. */
+    function detectChangesAndFlush(): void {
+        fixture.detectChanges();
+        TestBed.tick();
+    }
+
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [TestHostComponent],
@@ -48,7 +55,7 @@ describe('CardMaximizeDirective', () => {
         }).compileComponents();
 
         fixture = TestBed.createComponent(TestHostComponent);
-        fixture.detectChanges();
+        detectChangesAndFlush();
     });
 
     afterEach(() => {
@@ -64,8 +71,8 @@ describe('CardMaximizeDirective', () => {
     });
 
     it('does not render toggle when showWindowMaximize is false', () => {
-        fixture.componentInstance.showMax = false;
-        fixture.detectChanges();
+        fixture.componentInstance.showMax.set(false);
+        detectChangesAndFlush();
         expect(toggleBtn()).toBeNull();
     });
 
@@ -74,15 +81,15 @@ describe('CardMaximizeDirective', () => {
     });
 
     it('renders close button when showClose is true', () => {
-        fixture.componentInstance.showClose = true;
-        fixture.detectChanges();
+        fixture.componentInstance.showClose.set(true);
+        detectChangesAndFlush();
         expect(closeBtn()).toBeTruthy();
     });
 
     it('renders both buttons side by side when both inputs are true', () => {
-        fixture.componentInstance.showMax = true;
-        fixture.componentInstance.showClose = true;
-        fixture.detectChanges();
+        fixture.componentInstance.showMax.set(true);
+        fixture.componentInstance.showClose.set(true);
+        detectChangesAndFlush();
         const wrapper = controlsWrapper()!;
         expect(wrapper.children.length).toBe(2);
         expect(wrapper.children[0].classList.contains('card-maximize-toggle')).toBeTrue();
@@ -90,8 +97,8 @@ describe('CardMaximizeDirective', () => {
     });
 
     it('removes controls wrapper when both inputs become false', () => {
-        fixture.componentInstance.showMax = false;
-        fixture.detectChanges();
+        fixture.componentInstance.showMax.set(false);
+        detectChangesAndFlush();
         expect(controlsWrapper()).toBeNull();
     });
 
@@ -102,75 +109,75 @@ describe('CardMaximizeDirective', () => {
 
     it('click toggles to maximized', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeTrue();
     });
 
     it('click again restores', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
     });
 
     it('backdrop is created on maximize', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeTruthy();
     });
 
     it('backdrop is removed on restore', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeNull();
     });
 
     it('backdrop click restores', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeTrue();
         document.body.querySelector('.card-maximize-backdrop')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
     });
 
     it('Escape key restores', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
     });
 
     it('Escape does nothing when not maximized', () => {
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
     });
 
     it('close button hides card and emits closed event', () => {
-        fixture.componentInstance.showClose = true;
-        fixture.detectChanges();
+        fixture.componentInstance.showClose.set(true);
+        detectChangesAndFlush();
         expect(fixture.componentInstance.closedCount).toBe(0);
         closeBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(fixture.componentInstance.closedCount).toBe(1);
         expect(hostEl().style.display).toBe('none');
     });
 
     it('close while maximized restores first then hides', () => {
-        fixture.componentInstance.showClose = true;
-        fixture.detectChanges();
+        fixture.componentInstance.showClose.set(true);
+        detectChangesAndFlush();
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeTrue();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeTruthy();
         closeBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(fixture.componentInstance.closedCount).toBe(1);
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeNull();
@@ -179,7 +186,7 @@ describe('CardMaximizeDirective', () => {
 
     it('cleanup on destroy', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeTruthy();
         fixture.destroy();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeNull();
@@ -187,10 +194,10 @@ describe('CardMaximizeDirective', () => {
 
     it('disabling showWindowMaximize while maximized restores', () => {
         toggleBtn()!.click();
-        fixture.detectChanges();
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeTrue();
-        fixture.componentInstance.showMax = false;
-        fixture.detectChanges();
+        fixture.componentInstance.showMax.set(false);
+        detectChangesAndFlush();
         expect(hostEl().classList.contains('card--maximized')).toBeFalse();
         expect(document.body.querySelector('.card-maximize-backdrop')).toBeNull();
     });

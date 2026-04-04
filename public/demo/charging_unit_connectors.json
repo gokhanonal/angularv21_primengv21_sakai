@@ -1,0 +1,31 @@
+{
+    "success": true,
+    "pagination": null,
+    "message": null,
+    "data": [
+        {
+            "RID": 3526,
+            "modelId": 3,
+            "stationChargePointID": 9689,
+            "status": 3,
+            "statusName": "Kullanım Dışı",
+            "isActive": true,
+            "connectorNr": 1,
+            "chargingStatusMessage": null,
+            "chargingStatus": null,
+            "meterStartDate": null,
+            "energyUsed": null,
+            "stationConnectorName": "Type 2",
+            "stationConnectorKW": 22,
+            "stationConnectorAC": true,
+            "epdkSocketNumber": "",
+            "tariffId": 39,
+            "tariffName": "AC Tarife",
+            "tariffSaleUnitPrice": 35.0000,
+            "RoamingID": null,
+            "IsRoaming": 0
+        }
+    ],
+    "error": null,
+    "count": null
+}

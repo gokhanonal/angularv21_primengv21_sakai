@@ -10,7 +10,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
 import { validate } from '@/app/shared/validated-input/validators';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
-import { AvatarEditorDialogComponent } from './avatar-editor-dialog.component';
+import { AvatarEditorDialogComponent } from '@/app/shared/image-editor/avatar-editor-dialog.component';
 import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 const MAX_BYTES = 1048576;

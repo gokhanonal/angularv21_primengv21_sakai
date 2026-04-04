@@ -1,0 +1,15 @@
+{
+    "success": true,
+    "pagination": null,
+    "message": null,
+    "data": [
+        {
+            "id": 3,
+            "name": "ABB",
+            "brandId": 3,
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/abb-logo.png"
+        }
+    ],
+    "error": null,
+    "count": null
+}

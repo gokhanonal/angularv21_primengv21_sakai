@@ -5,7 +5,6 @@ import { DialogModule } from 'primeng/dialog';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 
 const VIEWPORT_SIZE = 320;
-const OUTPUT_SIZE = 256;
 
 @Component({
     selector: 'app-avatar-editor-dialog',
@@ -13,7 +12,7 @@ const OUTPUT_SIZE = 256;
     imports: [CommonModule, ButtonModule, DialogModule, TranslatePipe],
     template: `
         <p-dialog
-            [header]="'profile.editor.title' | t"
+            [header]="dialogTitle() | t"
             [modal]="true"
             [dismissableMask]="true"
             [style]="{ width: 'min(95vw, 28rem)' }"
@@ -104,6 +103,16 @@ export class AvatarEditorDialogComponent implements OnDestroy {
     readonly imageSrc = input<string>('');
 
     readonly confirmed = output<string>();
+
+    readonly outputWidth = input(256);
+
+    readonly outputHeight = input(256);
+
+    readonly dialogTitle = input('profile.editor.title');
+
+    readonly outputFormat = input('image/jpeg');
+
+    readonly outputQuality = input(0.92);
 
     readonly viewportCanvas = viewChild.required<ElementRef<HTMLCanvasElement>>('viewportCanvas');
 
@@ -336,16 +345,17 @@ export class AvatarEditorDialogComponent implements OnDestroy {
             return;
         }
 
+        const w = this.outputWidth();
+        const h = this.outputHeight();
         const out = document.createElement('canvas');
-        out.width = OUTPUT_SIZE;
-        out.height = OUTPUT_SIZE;
+        out.width = w;
+        out.height = h;
         const ctx = out.getContext('2d');
         if (!ctx) {
             this.onDialogVisibleChange(false);
             return;
         }
 
-        const S = OUTPUT_SIZE;
         const rad = (this.rotationDeg * Math.PI) / 180;
         const br = 100 + this.brightnessModel;
         const ct = this.contrastModel;
@@ -357,21 +367,24 @@ export class AvatarEditorDialogComponent implements OnDestroy {
         const sin = Math.abs(Math.sin(rad));
         const rotW = nw * cos + nh * sin;
         const rotH = nw * sin + nh * cos;
-        const baseScale = Math.max(S / rotW, S / rotH);
+        const baseScale = Math.max(w / rotW, h / rotH);
         const scale = baseScale * this.zoomModel;
 
         ctx.save();
         ctx.beginPath();
-        ctx.rect(0, 0, S, S);
+        ctx.rect(0, 0, w, h);
         ctx.clip();
-        ctx.translate(S / 2 + this.panX * (S / VIEWPORT_SIZE), S / 2 + this.panY * (S / VIEWPORT_SIZE));
+        ctx.translate(w / 2 + this.panX * (w / VIEWPORT_SIZE), h / 2 + this.panY * (h / VIEWPORT_SIZE));
         ctx.rotate(rad);
         ctx.scale(scale, scale);
         ctx.drawImage(img, -nw / 2, -nh / 2);
         ctx.restore();
         ctx.filter = 'none';
 
-        const dataUrl = out.toDataURL('image/jpeg', 0.92);
+        const fmt = this.outputFormat();
+        const q = this.outputQuality();
+        const dataUrl =
+            fmt === 'image/jpeg' || fmt === 'image/webp' ? out.toDataURL(fmt, q) : out.toDataURL(fmt);
         this.confirmed.emit(dataUrl);
         this.onDialogVisibleChange(false);
     }

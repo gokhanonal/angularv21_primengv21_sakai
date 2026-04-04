@@ -18,7 +18,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { TagModule } from 'primeng/tag';
 import { Customer, CustomerService, Representative } from '@/app/pages/service/customer.service';
 import { Product, ProductService } from '@/app/pages/service/product.service';
-import {ObjectUtils} from "primeng/utils";
+import { ObjectUtils} from "primeng/utils";
 import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 interface expandedRows {

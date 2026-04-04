@@ -87,6 +87,9 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
 
     private syncControls(showMax: boolean, showClose: boolean): void {
         if (!showMax && !showClose) {
+            if (this.maximized) {
+                this.restore();
+            }
             this.destroyMaximizeBtn();
             this.destroyCloseBtn();
             this.destroyControlsWrapper();

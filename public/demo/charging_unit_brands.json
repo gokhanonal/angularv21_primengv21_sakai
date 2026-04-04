@@ -1,0 +1,114 @@
+{
+    "success": true,
+    "pagination": null,
+    "message": null,
+    "data": [
+        {
+            "id": 3,
+            "name": "ABB",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/abb-logo.png"
+        },
+        {
+            "id": 21,
+            "name": "Alpitronic",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Logo-Alpitronic.png"
+        },
+        {
+            "id": 40,
+            "name": "AUTEL",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Autel logo.png"
+        },
+        {
+            "id": 16,
+            "name": "Chaevi",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Chavie.png"
+        },
+        {
+            "id": 4,
+            "name": "Circontrol",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/circontrol-logo-2023-color-1280x-q95.png"
+        },
+        {
+            "id": 20,
+            "name": "Eaton",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 1,
+            "name": "Gersan",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 9,
+            "name": "OPT1",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 10,
+            "name": "OPT2",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 22,
+            "name": "Phihong",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 7,
+            "name": "Porsche",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 5,
+            "name": "Roaming",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 11,
+            "name": "Schneider",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Schneider-Electric-Emblem.png"
+        },
+        {
+            "id": 6,
+            "name": "Setec",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 17,
+            "name": "Sinexcel",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/logo1.png"
+        },
+        {
+            "id": 18,
+            "name": "StarCharge",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Star Charge Logo.png"
+        },
+        {
+            "id": 37,
+            "name": "TEST",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Test-Logo-Small-Black-transparent-1.png"
+        },
+        {
+            "id": 19,
+            "name": "Vestel",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/vestel-kirmizi-logo-buyuk1(1).png"
+        },
+        {
+            "id": 2,
+            "name": "Voltrun",
+            "imageCdnUrl": null
+        },
+        {
+            "id": 15,
+            "name": "Wallbox",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/Wallbox.png"
+        },
+        {
+            "id": 12,
+            "name": "XCharge",
+            "imageCdnUrl": "https://mobile-uat-api.ovolt.com.tr/cdn/img/device-brands/circontrol-logo.svg"
+        }
+    ],
+    "error": null,
+    "count": null
+}

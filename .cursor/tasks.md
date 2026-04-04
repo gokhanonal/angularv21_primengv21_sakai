@@ -52,30 +52,30 @@ Improve the Station Management list (`/station-management`, `station-management-
 
 **A. First-load auto sizing**
 
-- [ ] On first visit to `/station-management` with a normal dataset, **scrollable data columns** show widths that **reduce obvious clipping** of typical values (addresses, names, codes) compared to fixed min-only layout, without breaking horizontal scroll.
-- [ ] **Min-width** rules from column definitions are **never violated**.
-- [ ] Auto-sizing runs **after data is loaded** and the table replaces the skeleton (not during skeleton-only state).
-- [ ] Changing **language** (header text length changes) updates layout appropriately on **next load or explicit refresh** (define: default = on **reload** of data or page refresh; document if live language switch must re-trigger).
+- [x] On first visit to `/station-management` with a normal dataset, **scrollable data columns** show widths that **reduce obvious clipping** of typical values (addresses, names, codes) compared to fixed min-only layout, without breaking horizontal scroll.
+- [x] **Min-width** rules from column definitions are **never violated**.
+- [x] Auto-sizing runs **after data is loaded** and the table replaces the skeleton (not during skeleton-only state).
+- [x] Changing **language** (header text length changes) updates layout appropriately on **next load or explicit refresh** (define: default = on **reload** of data or page refresh; document if live language switch must re-trigger).
 
 **B. User resize**
 
-- [ ] User can **drag** the boundary between **adjacent scrollable data columns** to change width.
-- [ ] With default **`fit`** mode, resizing **does not** cause the table to grow without bound inside the scroll container (behavior matches PrimeNG `fit` semantics).
-- [ ] Frozen **selection**, **station code**, **station name**, and **actions** columns **do not** expose resize handles (per default product decision).
-- [ ] Resize **coexists** with **column reorder** (reorder still works; widths stay with column field).
+- [x] User can **drag** the boundary between **adjacent scrollable data columns** to change width.
+- [x] With default **`fit`** mode, resizing **does not** cause the table to grow without bound inside the scroll container (behavior matches PrimeNG `fit` semantics).
+- [x] Frozen **selection**, **station code**, **station name**, and **actions** columns **do not** expose resize handles (per default product decision).
+- [x] Resize **coexists** with **column reorder** (reorder still works; widths stay with column field).
 
 **C. Skeleton**
 
-- [ ] While loading, skeleton layout **approximates** the final table: toolbar/caption strip + **grid of skeleton bars** aligned to **visible** columns (including frozen columns count).
-- [ ] Skeleton container height is **visually consistent** with the loaded table area (no large vertical jump when swapping skeleton → table).
-- [ ] On **load error**, current behavior is preserved (error message + retry; **no** misleading full-grid skeleton).
+- [x] While loading, skeleton layout **approximates** the final table: toolbar/caption strip + **grid of skeleton bars** aligned to **visible** columns (including frozen columns count).
+- [x] Skeleton container height is **visually consistent** with the loaded table area (no large vertical jump when swapping skeleton → table).
+- [x] On **load error**, current behavior is preserved (error message + retry; **no** misleading full-grid skeleton).
 
 **D. Regression / integration**
 
-- [ ] **Export** still produces correct data; column widths in UI **do not** corrupt exported values.
-- [ ] **Column picker**: hiding/showing columns updates the grid and skeleton column count; **no** runtime errors.
-- [ ] **Clear filters** still clears global search when that control exists (per project Angular grid rule).
-- [ ] `ng build` succeeds; **manual** smoke on Chrome (and one secondary browser if the team routinely tests Safari).
+- [x] **Export** still produces correct data; column widths in UI **do not** corrupt exported values.
+- [x] **Column picker**: hiding/showing columns updates the grid and skeleton column count; **no** runtime errors.
+- [x] **Clear filters** still clears global search when that control exists (per project Angular grid rule).
+- [x] `ng build` succeeds; **manual** smoke on Chrome (and one secondary browser if the team routinely tests Safari).
 
 ### Edge cases and negative scenarios
 
@@ -713,3 +713,370 @@ Create a **reusable grid state persistence service** under `src/app/core/` that 
 ### Validation
 
 - Manual: card with both flags — hover shows controls, tab into card shows controls, close hides, reload restores; **maximized + close** leaves no backdrop; **`ng build`**.
+
+## Station detail — Station Pictures card (carousel, add/change/delete, NEW badge, profile-style upload)
+
+### Source intent
+
+> In station-management detail page's first tab (Station Info), add a card for display pictures of station. The card include PrimeNG Carousel to display all pictures. Add Change Picture and Delete Picture buttons just under each picture. Also add a button for Adding New Picture. After adding new picture, add NEW badge to this picture. Adding new picture will operate like we do for user profile.
+
+### Summary
+
+**Feature:** On **`/station-management` detail** (`station-management-detail.ts`), **tab 0 — Station Info**, add a new **“Station Pictures”** card that shows all station images in a **PrimeNG Carousel** (`p-carousel`), with **Change Picture** and **Delete Picture** actions under the **currently visible** slide, an **Add New Picture** control, and a **NEW** badge on pictures added in the **current browser session** only.
+
+**Context:** `StationManagementRow` and `public/demo/stations.json` have **no** image fields today; data is demo/static JSON. Pictures shall be managed **in-memory** in the detail component (or a small local service), **not** written back to `stations.json` — analogous to how profile avatar editing uses client-side flow until save (here, **no persistence** to file/API is in scope unless product extends).
+
+**Assumptions:** Card uses **`appCardMaximize [showWindowMaximize]="true"`** like other cards. i18n via **`I18nService` / `TranslatePipe`** under **`stationMgmt.*`**. Upload/edit flow reuses **profile pattern**: hidden `input type="file"` → **`image/*`**, **max 1MB** → **`URL.createObjectURL`** preview → **`AvatarEditorDialogComponent`** → JPEG **data URL** output.
+
+### Product decisions (defaults until stakeholders override)
+
+| Topic | Default |
+|--------|--------|
+| **Picture storage** | **In-memory only** for demo: array of `StationPicture` (`id`, `dataUrl`, `isNew`, `addedAt`). No changes to `stations.json` or `StationManagementRow` for persistence in this task. |
+| **Add / replace flow** | Same as profile: file pick → validate → object URL → **`AvatarEditorDialogComponent`** → data URL. |
+| **Editor aspect ratio** | **Reuse `AvatarEditorDialogComponent` as-is** for **MVP** (square **256×256** output acceptable for demo station photos). Follow-up if landscape station photos are required. |
+| **Change Picture** | Replaces **that slide’s** `dataUrl`; **`isNew` stays false** (no NEW badge on replaced images). |
+| **Delete Picture** | **Immediate removal** from the in-memory array — **no** confirmation dialog (demo simplicity). |
+| **Card placement** | **Inside Station Info tab**, **after** the existing `<dl>` of station fields. |
+| **Empty state** | **No pictures:** show placeholder copy + **Add New Picture** only (carousel may be hidden or show empty template). |
+| **NEW badge** | **`p-tag`**, `severity="success"`, value **NEW** (translated key), **top-right** over image (`position: absolute`). **`isNew` is session-only**; full page reload clears all pictures / badges per in-memory model. |
+| **Initial demo data** | **No** seed images in JSON — user adds via upload; **`stations.json` unchanged**. |
+| **Carousel UX** | **`numVisible="1"`**, one photo at a time, **full width** within card; **nav arrows** + **indicator dots** (per PrimeNG defaults / `mediademo` patterns). |
+
+### Functional requirements
+
+1. **FR-1 — Station Pictures card on Station Info tab**  
+   The first tab shall include a **card** titled (translated) for station pictures, placed **below** the existing station field `<dl>`, with **`appCardMaximize [showWindowMaximize]="true"`**.
+
+2. **FR-2 — Carousel of pictures**  
+   When **one or more** pictures exist, the card shall render **`p-carousel`** bound to the in-memory picture list, **`numVisible="1"`**, with navigation and indicators appropriate to PrimeNG 21 and existing `mediademo` usage.
+
+3. **FR-3 — Per-slide actions**  
+   **Under the visible picture** (same slide as carousel item template), show **Change Picture** and **Delete Picture** buttons that apply to **that** item’s `id` (not a global ambiguous target).
+
+4. **FR-4 — Add New Picture**  
+   Provide **Add New Picture** (translated) that triggers the same file pipeline as profile: hidden file input, **`accept="image/*"`**, **max 1MB**, reject invalid type/size with user-visible feedback (toast or inline — align with profile).
+
+5. **FR-5 — Profile-style editor**  
+   After valid file selection, open **`AvatarEditorDialogComponent`**; on confirm, append a new **`StationPicture`** with a stable **`id`**, **`dataUrl`** from dialog output, **`isNew: true`**, **`addedAt: Date.now()`** (or ISO string) for ordering.
+
+6. **FR-6 — NEW badge**  
+   Pictures with **`isNew === true`** shall show **`p-tag`** “NEW” (translated) **overlaid** on the image (e.g. top-right). **`Change Picture` shall set or preserve `isNew: false`** for that item. **`Delete`** removes the item regardless of `isNew`.
+
+7. **FR-7 — Change Picture**  
+   **Change** reuses the file + editor flow; on confirm, **replace** the selected item’s `dataUrl` (and optionally `addedAt` for “last modified” — default: **do not** set `isNew`).
+
+8. **FR-8 — Delete Picture**  
+   **Delete** removes the picture from the array **immediately** without confirmation (per default).
+
+9. **FR-9 — Empty state**  
+   When **zero** pictures, show **placeholder message** (translated) and **Add New Picture**; no misleading carousel chrome unless PrimeNG empty template is used consistently.
+
+10. **FR-10 — Memory hygiene**  
+    **`URL.revokeObjectURL`** shall be called for **preview** object URLs when no longer needed (match profile patterns) to avoid leaks.
+
+11. **FR-11 — No regression**  
+    Existing detail tabs, routing, and Station Info `<dl>` behavior remain unchanged aside from the new card.
+
+### Non-functional requirements
+
+- **Performance:** Carousel with **typical demo counts** (tens of images max) shall remain responsive; avoid storing **huge** unbounded base64 in memory without product limits (nice-to-know: cap count or size).
+- **Accessibility:** Carousel **prev/next** controls and action buttons shall be **keyboard-operable** where PrimeNG provides; images need **`alt`** text or **decorative** treatment (empty `alt` + `aria-hidden` if purely decorative — **product**: station photos may warrant short `alt` from filename or generic “Station picture N”).
+- **Security / privacy:** No upload to server in scope; **data URLs** stay client-side; do not log full data URLs.
+- **Regression:** Import **`CarouselModule`** only where needed; **`ng build`** and existing station-management flows unaffected.
+- **i18n:** All new labels, placeholders, errors, and **NEW** tag text in **en/tr/fr/de**.
+
+### Acceptance criteria
+
+- [x] Station Info tab shows a **Station Pictures** card **after** the definition list, with **card maximize** enabled per project standard.
+- [x] With **≥1** picture, **`p-carousel`** shows **one** image at a time (**`numVisible=1`**), with **arrows** and **indicators** working.
+- [x] **Change Picture** and **Delete Picture** appear **below the visible slide** and target **that** picture only.
+- [x] **Add New Picture** opens file picker; invalid type or **>1MB** file is rejected with clear feedback.
+- [x] Valid selection flows through **`AvatarEditorDialogComponent`** and, on confirm, **adds** a new carousel item with **NEW** badge visible.
+- [x] **Change Picture** on an existing item updates the image and **does not** show NEW badge (unless product overrides).
+- [x] **Delete Picture** removes the item **immediately** without confirm dialog.
+- [x] **Empty state** shows placeholder + **Add New Picture** only.
+- [x] **Full page reload** results in **no** station pictures from this feature (in-memory only); **no** requirement to persist to `stations.json`.
+- [x] **`ng build`** succeeds; **i18n** present for **en/tr/fr/de** for all new strings.
+
+### Implementation breakdown
+
+- [x] **(a) Model** — Define **`StationPicture`** interface: `id` (string or number), `dataUrl` (string, JPEG data URL), `isNew` (boolean), `addedAt` (number timestamp for sort order). Keep **out of** `StationManagementRow` / JSON unless persistence is added later.
+
+- [x] **(b) Component state** — In `station-management-detail` (or injectable store), add **`signal`/`writable` array** for pictures; init **empty**. Optional: sort by `addedAt` ascending/descending (document choice; default **oldest first** in carousel or **newest first** — product pick in open questions).
+
+- [x] **(c) Template — card + carousel** — New `<div class="card" appCardMaximize ...>` with header; `<p-carousel [value]="pictures()" ...>` with **`numVisible="1"`**, `responsiveOptions` if needed; **`ng-template` #item** for slide: image + overlay **NEW** `p-tag` when `isNew`; row of **Change** / **Delete** under image.
+
+- [x] **(d) File + editor pipeline** — Reuse profile patterns: hidden `<input type="file" accept="image/*">`, **`UserProfileService`-like validation** or shared helper if one exists; **`AvatarEditorDialogComponent`** via `DialogService` / same injection as profile; on add → push new `StationPicture`; on change → `update` by `id`.
+
+- [x] **(e) Buttons** — **Add New Picture** triggers file input for **create** mode; **Change** triggers file input bound to **current item id** (separate input or single input + context signal).
+
+- [x] **(f) Modules** — Import **`CarouselModule`**, **`TagModule`** (if not already), dialog/editor dependencies already used by profile.
+
+- [x] **(g) i18n** — Add keys under **`stationMgmt.pictures.*`** (or agreed prefix) in **`translations.ts`** for **en/tr/fr/de**.
+
+- [x] **(h) Tests / smoke** — Optional unit tests for pure helpers (id generation, `isNew` rules); **`ng build`**; manual: add → NEW badge → change → no NEW → delete → empty state.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **User cancels `AvatarEditorDialogComponent`** | No change to list (add) or previous `dataUrl` preserved (change). |
+| **Add then delete before save** | Item removed; no crash; NEW badge irrelevant. |
+| **Delete last picture** | UI transitions to **empty state**; carousel hidden or empty template. |
+| **Change picture on item that was `isNew`** | After confirm, **`isNew` false** — badge disappears (aligns with “only newly added” semantics). |
+| **Very large file (>1MB)** | Reject per profile rule; no dialog open. |
+| **Non-image file** | Reject; clear message. |
+| **Many images** | Carousel still usable; consider **memory** (all data URLs) — acceptable for demo; document risk. |
+| **Same file chosen twice** | Should still work (new `id` for add); change replaces blob URL content. |
+| **Browser refresh** | All pictures **gone** (in-memory); **no** broken image URLs from JSON. |
+| **`URL.createObjectURL` cleanup** | Revoke previews on dialog close/cancel to avoid leaks. |
+| **Carousel index after delete** | PrimeNG should keep valid index; if last item deleted, index resets — verify no runtime error. |
+| **Station row changes (navigation between stations)** | **Open question:** reset pictures per `stationId` or keep one global session list — default **reset array when `id` input changes** (per-station in-memory). |
+
+### i18n keys needed (suggested)
+
+- `stationMgmt.pictures.cardTitle` — Card heading (e.g. “Station pictures”).
+- `stationMgmt.pictures.add` — Add New Picture button.
+- `stationMgmt.pictures.change` — Change Picture button.
+- `stationMgmt.pictures.delete` — Delete Picture button.
+- `stationMgmt.pictures.newBadge` — Tag value “NEW” (if not hardcoded English).
+- `stationMgmt.pictures.empty` — Empty state message.
+- `stationMgmt.pictures.errorFileType` — Not an image.
+- `stationMgmt.pictures.errorFileSize` — Exceeds 1MB (match profile messaging if shared key exists).
+- Optional: `stationMgmt.pictures.alt` — Generic alt text pattern.
+
+*Engineering may **dedupe** with profile keys if the app standardizes validation messages.*
+
+### Out of scope
+
+- Persisting station pictures to **`stations.json`**, backend API, or **cloud storage**.
+- Extending **`StationManagementRow`** or **HTTP service** for real image URLs.
+- **Landscape-specific** crop aspect in `AvatarEditorDialogComponent` (unless promoted from open questions).
+- **Confirmation dialog** before delete (unless product changes default).
+- **Drag-and-drop** upload, **bulk** import, or **image optimization** pipeline beyond the editor output.
+- **Permissions / roles** for who may edit station pictures (single-user demo assumption).
+
+### Resolved questions
+
+1. **Per-station vs global in-memory list:** **Yes**, reset per `stationId`. Data is mock for now; will come from API afterwards.
+
+2. **Carousel slide order:** **Newest first**.
+
+3. **Max pictures:** **10** default, but **configurable** (e.g. component property / constant).
+
+4. **`AvatarEditorDialogComponent` reuse:** Reuse the same dialog but **make it a reusable/configurable component** with input properties for: **output width/height** (currently hardcoded 256x256), **max file size**, **accepted file types**, and **dialog title**. The current profile usage becomes the first consumer with its existing defaults; station pictures become the second consumer with its own settings. See **prerequisite task** below.
+
+5. **Caption / alt text:** Add an **editable input box under each picture** in the carousel for the user to set a caption. **Default caption:** `"<station name> <N>"` where `<N>` is a sequential number. Caption is stored in the `StationPicture` model (`caption: string`) and used as `alt` text on the `<img>`.
+
+### Updated model
+
+```typescript
+interface StationPicture {
+    id: string;
+    dataUrl: string;
+    caption: string;       // editable; default: "<station name> <N>"
+    isNew: boolean;
+    addedAt: number;       // Date.now() timestamp for sort order
+}
+```
+
+### Prerequisite — Make `AvatarEditorDialogComponent` reusable
+
+Before the station pictures feature, refactor `AvatarEditorDialogComponent` (currently `src/app/pages/profile/avatar-editor-dialog.component.ts`) to accept configurable inputs:
+
+| New input | Type | Default (profile parity) | Description |
+|-----------|------|--------------------------|-------------|
+| `outputWidth` | `number` | `256` | Output canvas width in px |
+| `outputHeight` | `number` | `256` | Output canvas height in px |
+| `maxFileBytes` | `number` | `1048576` (1 MB) | Informational; actual validation stays in caller |
+| `acceptTypes` | `string` | `'image/*'` | Informational; actual `<input accept>` is caller-side |
+| `dialogTitle` | `string` | `'profile.editor.title'` (i18n key) | Dialog header text |
+| `outputFormat` | `string` | `'image/jpeg'` | MIME type for `canvas.toDataURL()` |
+| `outputQuality` | `number` | `0.92` | Quality param for `canvas.toDataURL()` |
+
+**Current hardcoded values** (`VIEWPORT_SIZE = 320`, `OUTPUT_SIZE = 256`, `toDataURL('image/jpeg', 0.92)`) become either inputs with defaults or derived from inputs.
+
+**Profile page** (`profile.ts`) continues to work **unchanged** (all defaults match current behavior). **Station pictures** can pass e.g. `[outputWidth]="512" [outputHeight]="512"` or other values as product decides.
+
+**Move or keep in place:** Move component to `src/app/shared/` since it is now reusable; update import paths in profile page.
+
+### Updated implementation breakdown
+
+- [x] **(a) Prerequisite — Refactor `AvatarEditorDialogComponent`** — Add configurable inputs (`outputWidth`, `outputHeight`, `dialogTitle`, `outputFormat`, `outputQuality`). Replace hardcoded `OUTPUT_SIZE` with input-derived values. Move component to `src/app/shared/`. Verify profile page still works unchanged.
+
+- [x] **(b) Model** — Define **`StationPicture`** interface: `id` (string), `dataUrl` (string), `caption` (string), `isNew` (boolean), `addedAt` (number). Place in a new file or alongside detail component.
+
+- [x] **(c) Component state** — In `station-management-detail`, add `WritableSignal<StationPicture[]>` for pictures; init **empty**; reset on `stationId` change. Sort **newest first** by `addedAt`.
+
+- [x] **(d) Template — card + carousel** — New card with `p-carousel [value]="pictures()" [numVisible]="1"`. Slide template: image with overlay `p-tag` NEW badge (when `isNew`), **caption input** below image, **Change Picture** and **Delete Picture** buttons below caption.
+
+- [x] **(e) Add New Picture** — Hidden file input, validation (type, size), `AvatarEditorDialogComponent` with station-specific config. On confirm: push new `StationPicture` with `isNew: true`, default caption `"<station name> <N>"`. Enforce max **10** pictures (configurable); disable add button when at cap.
+
+- [x] **(f) Change Picture** — Same file+editor flow; on confirm: replace `dataUrl`, set `isNew: false`. Preserve caption.
+
+- [x] **(g) Delete Picture** — Remove immediately from array. No confirmation.
+
+- [x] **(h) Modules** — Import `CarouselModule`, `TagModule`, `InputTextModule`, editor dialog.
+
+- [x] **(i) i18n** — Add keys under `stationMgmt.pictures.*` in `translations.ts` for en/tr/fr/de. Include caption-related labels.
+
+- [x] **(j) Tests / smoke** — `ng build`; manual: add -> NEW badge -> edit caption -> change picture -> delete -> empty state -> reload clears all.
+
+### Updated i18n keys needed
+
+- `stationMgmt.pictures.cardTitle` — Card heading.
+- `stationMgmt.pictures.add` — Add New Picture button.
+- `stationMgmt.pictures.change` — Change Picture button.
+- `stationMgmt.pictures.delete` — Delete Picture button.
+- `stationMgmt.pictures.newBadge` — "NEW" tag value.
+- `stationMgmt.pictures.empty` — Empty state message.
+- `stationMgmt.pictures.errorFileType` — Invalid file type.
+- `stationMgmt.pictures.errorFileSize` — File too large.
+- `stationMgmt.pictures.captionPlaceholder` — Caption input placeholder.
+- `stationMgmt.pictures.maxReached` — Max pictures reached message.
+
+### Validation
+
+- **Build:** `ng build`.
+- **Manual:** Station detail -> add image -> NEW badge -> edit caption -> navigate carousel -> change picture (no NEW) -> delete -> empty state; reload -> all gone; switch station -> empty; card maximize works; profile page still works after editor refactor.
+
+### Risks
+
+| Risk | Mitigation |
+|------|------------|
+| **Large base64 strings** in Angular change detection | Use immutable updates by `id`; avoid logging data URLs. |
+| **Editor refactor breaks profile** | All new inputs have defaults matching current hardcoded values; profile template unchanged. |
+| **Carousel + absolute NEW badge** | Test overlap with PrimeNG slide templates and responsive widths. |
+
+
+## Dashboard widget: `ChargingUnitWidget`
+
+### Summary (BA)
+
+**Problem:** Operators need a **dashboard-at-a-glance** view of charging units alongside existing widgets, without a live API yet.
+
+**Outcome:** A new standalone widget **`ChargingUnitWidget`** (`selector: app-charging-unit-widget`) that **matches the visual and interaction pattern** of **`RecentSalesWidget`** (Sakai card chrome, `p-table`, paginator, sort icons, text icon-only View button, `appCardMaximize` + `[showWindowMaximize]="true"`), fed by **static JSON** at `public/demo/charging_unit.json`, with **all new UI strings** in **en/tr/fr/de** via `TranslatePipe` / `I18nService`.
+
+**Assumptions (defaults until stakeholders override):** JSON envelope `{ success, data: ChargingUnitRow[] }` is stable; `data` is the table source; rows are homogeneous; no real HTTP in v1 (service uses `fetch` or `HttpClient` to the public asset or `Promise.resolve` after static import — engineering choice, behavior identical to user).
+
+### Product decisions (defaults until stakeholders override)
+
+| Topic | Default |
+|--------|--------|
+| **Visual parity with `RecentSalesWidget`** | Same **card** structure: `card mb-8!`, `card-header` / `card-heading` / `card-title` + `card-description`, `card-actions` with **View More** link + `pi-angle-right`, `card-header-divider`, `p-table` with `responsiveLayout="scroll"`, same **button** classes on View action. |
+| **Table columns (3 data + actions)** | **Photo** (placeholder icon), **Device code** (`deviceCode`), **Serial number** (`serialNumber`), **Actions** (Edit / Delete / Configuration icon buttons — all no-op, no routerLink). |
+| **“Photo” with no URL in JSON** | **Placeholder cell**: fixed-size box (match ~50px thumb width pattern), **Prime icon** e.g. `pi pi-bolt` or `pi pi-image` on neutral background, **`alt`** from i18n (`dashboard.chargingUnits.photoAlt`). No network image fetch for v1. |
+| **Brand logo later** | Optional follow-up: map `brandId` → static assets; **out of scope** unless confirmed. |
+| **Dashboard placement** | **Add** widget **below** `<app-recent-sales-widget />` in the **left** `xl:col-span-6` column in `dashboard.ts` (do not remove existing widgets unless product says otherwise). |
+| **View More link** | **No navigation** — `(click)="$event.preventDefault()"`. No `routerLink` in v1. |
+| **Actions column** | **Edit** (`pi-pencil`), **Delete** (`pi-trash`), **Configuration** (`pi-cog`) — icon-only text+rounded buttons, all **no-op** (no routerLink, no handler logic). |
+| **Pagination** | **`[paginator]="true"`**, **`[rows]="5"`** (match reference). |
+| **Sortable columns** | **Match reference pattern:** `pSortableColumn` + `p-sortIcon` on **Device code** and **Serial number** (fields `deviceCode`, `serialNumber`). |
+| **Dates / numbers in table** | **Not in default 4-column set**; if extra columns added, format `lastHeartBeat` / `createDate` with `DatePipe` + locale — nice-to-know. |
+| **Data service** | New **`ChargingUnitService`** `@Injectable()`, loads from **`/demo/charging_unit.json`** (or equivalent public path), maps **`response.data`** to `ChargingUnit[]`; on `success !== true` or missing `data`, use **`[]`**. |
+| **Card title / description** | **i18n keys** (not hardcoded English): see **i18n keys** section; default copy tone aligned with **`stationMgmt.tabs.chargingUnits`** / **`kpi.activeUnits.title`**. |
+
+### Functional requirements
+
+1. **FR-1 — Widget component**  
+   Provide `ChargingUnitWidget` standalone component with the same **imports category** as reference: `CommonModule`, `TableModule`, `ButtonModule`, `RippleModule`, `CardMaximizeDirective`, plus **`TranslatePipe`** (or project-standard i18n pipe).
+
+2. **FR-2 — Card chrome**  
+   Root element: `<div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">` with header, divider, and table as in reference.
+
+3. **FR-3 — i18n**  
+   All **visible** strings (title, description, View More, column headers, placeholder `alt`, optional empty state) use **translation keys** with **en, tr, fr, de** entries in `translations.ts`.
+
+4. **FR-4 — Data load**  
+   On init, load charging units via **`ChargingUnitService`**; store in a **`signal`**; bind `[value]` to table.
+
+5. **FR-5 — Table behavior**
+   Paginator **5** rows; **sort** on **Device code** and **Serial number**; **Actions** column: **Edit** (`pi-pencil`), **Delete** (`pi-trash`), **Configuration** (`pi-cog`) — icon-only text+rounded buttons, all no-op.
+
+6. **FR-6 — Dashboard integration**  
+   Import and render `<app-charging-unit-widget />` in `dashboard.ts` per placement default.
+
+7. **FR-7 — Typing**  
+   Define a **`ChargingUnit`** (or `ChargingUnitRow`) interface covering fields used in the template + service mapping from JSON.
+
+### Non-functional requirements
+
+- **Performance:** Static file, small array — load should not block UI beyond normal async; no unnecessary change detection churn.
+- **Accessibility:** Table headers associated with cells; image placeholder has **meaningful `alt`**; icon buttons need **`aria-label`** (translated) if no visible text.
+- **Security/privacy:** Do not log full JSON in production; treat IP-like fields as **display-only** (no extra exposure in errors).
+- **Consistency:** Match **naming, file location** (`dashboard/components/`), and **documentation level** of `recentsaleswidget.ts`.
+- **Build:** `ng build` succeeds.
+
+### Acceptance criteria
+
+- [x] Widget **visually matches** `RecentSalesWidget` card/table/button patterns (spacing, classes, maximize behavior).
+- [x] Data appears from **`public/demo/charging_unit.json`** with **≥1** row in demo file.
+- [x] **Paginator** shows **5** rows per page when data > 5 (extend demo JSON for QA if needed).
+- [x] **Sort** works on **deviceCode** and **serialNumber** (or product-selected fields).
+- [x] **All new strings** translated in **en, tr, fr, de**.
+- [x] **Placeholder** used for photo column — **no** broken image URLs.
+- [x] **View More** behavior matches **decision** (default: preventDefault only).
+- [x] **`ng build`** passes.
+
+### Implementation breakdown (checklist)
+
+- [x] Add **`ChargingUnit`** interface + **`charging-unit.service.ts`** (load + unwrap `data`, error → `[]`).
+- [x] Add **`chargingunitwidget.ts`** (or `charging-unit-widget.ts` per project kebab case in filename — match sibling `recentsaleswidget.ts` style).
+- [x] Register **`providers: [ChargingUnitService]`** on widget (mirror `ProductService` on reference).
+- [x] Wire **`dashboard.ts`**: import component + template placement.
+- [x] Add **i18n keys** to `translations.ts` for **en, tr, fr, de**.
+- [x] **Unit tests** — `ChargingUnitService` (unwrap `data`, `success: false` → `[]`, malformed JSON handling); widget component smoke test if project norms require.
+- [ ] Manual smoke: dashboard load, sort, paginate, maximize card, switch language.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected |
+|----------|----------|
+| **`data` empty array** | Table shows **empty body**; optional **empty message** row (translated) — product default: **PrimeNG empty** only unless specified. |
+| **`success: false` or malformed JSON** | **No throw** to user; table **`[]`**; optional `console.error` in dev only (follow project logging norms). |
+| **Null fields** (`internalAddress`, `note`, etc.) | Display **em dash** or blank per column; **no** template errors. |
+| **Very long serial / device code** | **Horizontal scroll** via `responsiveLayout="scroll"`; min-width styles similar to reference columns. |
+| **Duplicate `deviceCode`** | Sort/paginate still work; no special merge. |
+| **RTL / future** | i18n strings work; layout **not** required in v1 beyond existing app support. |
+
+### Resolved questions
+
+1. **Column set:** **Photo**, **Device code** (`deviceCode`), **Serial number** (`serialNumber`), **Actions** (Edit, Delete, Configuration icon buttons — no link/routerLink).
+2. **Actions column:** Populate **Edit** (`pi-pencil`), **Delete** (`pi-trash`), **Configuration** (`pi-cog`) icon buttons. All are **no-op** (`$event.preventDefault()` or empty handler) — no navigation, no routerLink. Same text+rounded button style as reference View button.
+3. **Photo strategy:** **Placeholder icon only** (e.g. `pi pi-bolt` or `pi pi-image`). No brand asset map.
+4. **Nice-to-know — Demo data size:** Add more rows to JSON for **pagination QA** if needed.
+5. **Nice-to-know — Date columns:** Not in widget; only on full management screen.
+
+### i18n keys needed (suggested namespace `dashboard.chargingUnits.*`)
+
+| Key | Purpose (EN example) |
+|-----|----------------------|
+| `dashboard.chargingUnits.title` | Card title (e.g. "Charging units") |
+| `dashboard.chargingUnits.description` | Card subtitle (e.g. "Overview of charging units") |
+| `dashboard.chargingUnits.viewMore` | View More link |
+| `dashboard.chargingUnits.colPhoto` | Photo |
+| `dashboard.chargingUnits.colDeviceCode` | Device code |
+| `dashboard.chargingUnits.colSerial` | Serial number |
+| `dashboard.chargingUnits.colStatus` | Status (if used) |
+| `dashboard.chargingUnits.colBrandModel` | Brand / model (if used) |
+| `dashboard.chargingUnits.photoAlt` | Alt for placeholder image |
+| `dashboard.chargingUnits.editAria` | aria-label for Edit button |
+| `dashboard.chargingUnits.deleteAria` | aria-label for Delete button |
+| `dashboard.chargingUnits.configAria` | aria-label for Configuration button |
+| `dashboard.chargingUnits.colActions` | Actions column header |
+| `dashboard.chargingUnits.empty` | Optional empty state |
+
+*Provide **tr, fr, de** equivalents; avoid embedding PII in strings.*
+
+### Out of scope
+
+- Real **REST API**, auth, or **WebSocket** live updates.
+- **Functional** editing/deleting/configuration of units (buttons rendered but **no-op**), **bulk actions**, or **export** from the widget.
+- **Persisted** user preferences for this table.
+- **Replacing** or removing existing dashboard widgets without explicit product approval.
+- **OCPP version** formatting, **roaming** flags, or full **20+ field** grid in the widget.
+
+### Handoff
+
+All blocking questions resolved. Engineering implements per **FR** and **resolved questions**. Columns: Photo, Device code, Serial number, Actions (Edit/Delete/Configuration no-op buttons). Photo: placeholder icon. View More: no navigation.
