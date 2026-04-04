@@ -6,15 +6,16 @@ import {ButtonModule} from 'primeng/button';
 import {InputTextModule} from 'primeng/inputtext';
 import {MessageModule} from 'primeng/message';
 import {ToastModule} from 'primeng/toast';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-messages-demo',
     standalone: true,
-    imports: [CommonModule, ToastModule, ButtonModule, InputTextModule, MessageModule, FormsModule],
+    imports: [CommonModule, ToastModule, ButtonModule, InputTextModule, MessageModule, FormsModule, CardMaximizeDirective],
     template: `
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Toast</div>
                     <div class="flex flex-wrap gap-2">
                         <p-button (click)="showSuccessViaToast()" label="Success" severity="success" />
@@ -38,7 +39,7 @@ import {ToastModule} from 'primeng/toast';
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Message</div>
                     <div class="flex flex-col gap-4 mb-4">
                         <p-message severity="success">Success Message</p-message>

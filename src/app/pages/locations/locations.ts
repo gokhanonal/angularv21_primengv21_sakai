@@ -10,19 +10,20 @@ import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
 import * as L from 'leaflet';
 import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-locations',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, TableModule, InputTextModule, TagModule, IconFieldModule, InputIconModule, ButtonModule],
+    imports: [CommonModule, FormsModule, RouterModule, TableModule, InputTextModule, TagModule, IconFieldModule, InputIconModule, ButtonModule, CardMaximizeDirective],
     template: `
-        <div class="card mb-4">
+        <div class="card mb-4" appCardMaximize>
             <h3 class="card-title">Regional sites</h3>
             <p class="card-description">{{ filteredSites().length }} of {{ sites.length }} sites &middot; marker fill = Status column color</p>
             <div #mapContainer class="locations-map rounded-lg border border-surface-200 dark:border-surface-700"></div>
         </div>
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             <h3 class="card-title">Sites directory</h3>
             <p-table
                 #dt

@@ -5,18 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { TreeTableModule } from 'primeng/treetable';
 import { CommonModule } from '@angular/common';
 import { NodeService } from '@/app/pages/service/node.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-tree-demo',
     standalone: true,
-    imports: [CommonModule, FormsModule, TreeModule, TreeTableModule],
+    imports: [CommonModule, FormsModule, TreeModule, TreeTableModule, CardMaximizeDirective],
     template: `
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl">Tree</div>
             <p-tree [value]="treeValue()" selectionMode="checkbox" [(selection)]="selectedTreeValue"></p-tree>
         </div>
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">TreeTable</div>
             <p-treetable [value]="treeTableValue()" [columns]="cols" selectionMode="checkbox" [(selectionKeys)]="selectedTreeTableValue" dataKey="key" [scrollable]="true" [tableStyle]="{ 'min-width': '50rem' }">
                 <ng-template #header let-columns>

@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { NotificationService } from '@/app/layout/service/notification.service';
 import { NotificationItem, NotificationType } from '@/app/layout/service/notification.contract';
 import { NotificationDetail } from './notification-detail';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 type ReadFilter = 'all' | 'unread' | 'read';
 
 @Component({
     selector: 'app-notifications',
     standalone: true,
-    imports: [CommonModule, NotificationDetail],
+    imports: [CommonModule, NotificationDetail, CardMaximizeDirective],
     template: `
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="card-header">
                 <div class="card-heading">
                     <h3 class="card-title">All Notifications</h3>

@@ -11,13 +11,14 @@ import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { ScrollTopModule } from 'primeng/scrolltop';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-misc-demo',
     standalone: true,
-    imports: [CommonModule, ProgressBarModule, BadgeModule, AvatarModule, ScrollPanelModule, TagModule, ChipModule, ButtonModule, SkeletonModule, AvatarGroupModule, ScrollTopModule, OverlayBadgeModule],
+    imports: [CommonModule, ProgressBarModule, BadgeModule, AvatarModule, ScrollPanelModule, TagModule, ChipModule, ButtonModule, SkeletonModule, AvatarGroupModule, ScrollTopModule, OverlayBadgeModule, CardMaximizeDirective],
     template: `
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">ProgressBar</div>
             <div class="flex flex-col md:flex-row gap-4">
                 <div class="md:w-1/2">
@@ -31,7 +32,7 @@ import { TagModule } from 'primeng/tag';
 
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Badge</div>
                     <div class="flex gap-2">
                         <p-badge value="2"></p-badge>
@@ -68,7 +69,7 @@ import { TagModule } from 'primeng/tag';
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Avatar</div>
                     <div class="font-semibold mb-4">Group</div>
                     <p-avatargroup styleClass="mb-4">
@@ -91,7 +92,7 @@ import { TagModule } from 'primeng/tag';
                     </p-overlaybadge>
                 </div>
 
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Skeleton</div>
                     <div class="rounded-border border border-surface p-6">
                         <div class="flex mb-4">
@@ -111,7 +112,7 @@ import { TagModule } from 'primeng/tag';
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Tag</div>
                     <div class="font-semibold mb-4">Default</div>
                     <div class="flex gap-2">
@@ -141,7 +142,7 @@ import { TagModule } from 'primeng/tag';
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">Chip</div>
                     <div class="font-semibold mb-4">Basic</div>
                     <div class="flex items-center flex-col sm:flex-row">

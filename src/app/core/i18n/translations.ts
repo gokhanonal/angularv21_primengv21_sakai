@@ -16,6 +16,9 @@ const en: TranslationTable = {
     'breadcrumb.stationManagement': 'Station Management',
     'breadcrumb.stationManagementDetail': 'Station details',
 
+    'card.maximize': 'Maximize',
+    'card.restore': 'Restore',
+
     'topbar.calendar': 'Calendar',
     'topbar.messages': 'Messages',
     'topbar.profile': 'Profile',
@@ -284,6 +287,9 @@ const tr: TranslationTable = {
     'breadcrumb.stationManagement': 'İstasyon yönetimi',
     'breadcrumb.stationManagementDetail': 'İstasyon detayı',
 
+    'card.maximize': 'Büyüt',
+    'card.restore': 'Geri Yükle',
+
     'topbar.calendar': 'Takvim',
     'topbar.messages': 'Mesajlar',
     'topbar.profile': 'Profil',
@@ -524,6 +530,9 @@ const fr: TranslationTable = {
     'breadcrumb.stationManagement': 'Gestion des stations',
     'breadcrumb.stationManagementDetail': 'Détail de la station',
 
+    'card.maximize': 'Agrandir',
+    'card.restore': 'Restaurer',
+
     'topbar.calendar': 'Calendrier',
     'topbar.messages': 'Messages',
     'topbar.profile': 'Profil',
@@ -747,6 +756,9 @@ const de: TranslationTable = {
     'breadcrumb.changePassword': 'Passwort ändern',
     'breadcrumb.stationManagement': 'Stationsverwaltung',
     'breadcrumb.stationManagementDetail': 'Stationsdetails',
+
+    'card.maximize': 'Maximieren',
+    'card.restore': 'Wiederherstellen',
 
     'topbar.calendar': 'Kalender',
     'topbar.messages': 'Nachrichten',

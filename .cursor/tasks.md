@@ -316,3 +316,160 @@ Create a **reusable grid state persistence service** under `src/app/core/` that 
 - [x] **(e) Unit tests** — Test `GridStateService` (save/load/clear, SSR guard, corrupt data handling). Test restore logic (unknown columns filtered, sort entries for hidden columns removed). Test reset clears stored state and resets component properties.
 
 - [x] **(f) Build verification and regression smoke** — `ng build` succeeds. Manual: persist columns + order + sort + widths → navigate away → come back → state restored. Reset button clears everything. Export still works. Column picker still works. No lint errors.
+
+## Bug-fix: /station-management — global full-text search does not match Station Code
+
+### Summary (BA)
+
+**Problem:** The grid’s global search box calls `table.filterGlobal(value, 'contains')`, but rows are **not** filtered when the user types a **Station Code** value.
+
+**Expected:** Typing text that appears in the frozen **Station Code** column (`stationInfoId`) narrows the table to matching rows, consistent with other always-visible columns (e.g. Station Name).
+
+**Actual:** Station Code is never considered by global search because `stationInfoId` is omitted from `[globalFilterFields]`.
+
+**Assumption:** PrimeNG `contains` matching on this field behaves like other string-backed columns (partial match, case sensitivity per PrimeNG defaults).
+
+### Root cause
+
+`globalFilterFieldsForTable` returns `['name', ...optional]` where `optional` only includes scrollable, column-picker-driven fields (`address`, `phone`, `cityName`, etc.). The frozen **Station Code** column uses field `stationInfoId`, which is **not** in the fixed or optional lists — so global search never targets it, even though the column is always visible.
+
+### Functional requirements (bug scope)
+
+- **BFR-1:** `stationInfoId` shall be included in the array returned by `globalFilterFieldsForTable` **unconditionally** (frozen, always visible — same rationale as `name`).
+- **BFR-2:** No change to column picker logic, per-column filters, or other `globalFilterFields` entries beyond adding `stationInfoId` unless a regression is found.
+
+### Acceptance criteria
+
+- [x] On `/station-management`, entering a substring that matches a row’s **Station Code** in the global search box **shows only** rows whose `stationInfoId` matches per PrimeNG `contains` behavior.
+- [x] Global search still works for **Station Name** and existing optional columns as today.
+- [x] **Clear filter** / clear-search behavior (if applicable) remains unchanged per project grid rules.
+
+### Implementation breakdown
+
+- [x] **Add `stationInfoId` to global filter fields** — In `station-management-list` (or equivalent), extend `globalFilterFieldsForTable` so the returned array includes `'stationInfoId'` alongside `'name'` (e.g. fixed prefix: `['stationInfoId', 'name', ...optional]` or equivalent order acceptable to UX; document if order affects PrimeNG behavior).
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected |
+|----------|----------|
+| **Partial code** | User types a prefix/substring; `contains` matches as for other string fields. |
+| **Numeric codes as strings** | Values stored/displayed as strings still filter correctly; leading zeros / formatting match stored model. |
+| **No match** | Table shows empty body (or PrimeNG empty state) — same as other global search misses. |
+| **Special characters in code** | No crash; match behavior follows PrimeNG filter for that field type. |
+
+### Out of scope (this bug-fix)
+
+- Changing global search semantics (`contains` vs `startsWith`) for other columns.
+- Backend or API changes.
+- New columns, export, or column picker behavior beyond what is required to include `stationInfoId` in `globalFilterFields`.
+
+### Validation
+
+- Manual: `/station-management` — global search by full and partial Station Code; regression spot-check on name + one optional column.
+- Optional: unit test on `globalFilterFieldsForTable` composition if the project tests such getters.
+
+
+## For all cards, add window-maximize and window-minimize button and feature
+
+### Summary
+
+**Feature:** Add a **maximize / restore** toggle on Sakai-style card containers (`<div class="card">`) so users can expand a card to **full-viewport focus mode** (fixed overlay with backdrop) and return it to normal inline layout. This is **not** OS-style “minimize to taskbar” or accordion collapse — “minimize” in the UI means **exit maximize** (restore).
+
+**Context:** Cards are plain theme divs (not PrimeNG `p-card`), with heterogeneous markup (structured `card-header` / `card-actions`, or simple title rows). Coverage target is **all** such cards app-wide, implemented via a **reusable Angular directive** to avoid per-component duplication.
+
+**Assumptions:** PrimeNG icons `pi pi-window-maximize` and `pi pi-window-minimize` are used for the toggle; existing Sakai `_utils.scss` card styles remain the base; i18n follows `I18nService` / `TranslatePipe` for en/tr/fr/de where new strings are added.
+
+### Product decisions (defaults until stakeholders override)
+
+| Topic | Default |
+|--------|--------|
+| **“Maximize” behavior** | Card expands to fill the **full viewport** as a **fixed overlay** (`position: fixed`, inset 0 or safe-area-aware margins), **z-index above** sidebar and topbar, with a **semi-opaque backdrop** behind the card to dim the shell. |
+| **“Minimize” / restore** | Same control **toggles** state: from maximized, user returns to **normal inline** card layout (not a separate “minimize to strip” metaphor). Icon switches: **maximize** when normal, **minimize** (or **restore**) when maximized — align tooltip/aria with “Expand” / “Restore” if copy differs from icon name. |
+| **Button placement** | **Top-right** of the card chrome, **icon-only** `p-button` (e.g. `text` + `rounded`), using `pi-window-maximize` / `pi-window-minimize` per state. |
+| **Which cards** | **All** production `<div class="card">` instances. Prefer **one reusable directive** (e.g. `appCardMaximize`) applied to each card root (or a single host registration pattern if the team chooses auto-apply via a wrapper — default: **explicit attribute on each card root** for clarity, or document `hostDirectives` if used). |
+| **Animation** | **Optional** short CSS transition (opacity / scale / transform) for enter/exit; must not block interaction or exceed ~200–300ms unless product specifies otherwise. |
+| **Scroll when maximized** | Card **body** (or maximized panel inner wrapper) uses **overflow auto** so tall tables, charts, and forms scroll inside the viewport without clipping. |
+| **Keyboard** | **Escape** while maximized **restores** normal layout (and returns focus safely — e.g. to the toggle or card container). |
+| **Stacking** | Only **one** maximized card at a time by default; opening maximize on another card **restores** the previous one first, or **blocks** second maximize — product default: **restore previous** when maximizing a new card (avoids z-index wars). |
+
+### Functional requirements
+
+1. **FR-1 — Reusable card maximize capability**  
+   The system shall provide a **reusable Angular directive** (e.g. `CardMaximizeDirective` / selector `appCardMaximize`) attachable to any element that acts as a card root (typically `<div class="card">`), without requiring migration to `p-card`.
+
+2. **FR-2 — Maximize behavior**  
+   When the user activates maximize, the card shall occupy the **full viewport** in a **fixed overlay** with **backdrop**, **above** app chrome (sidebar, topbar), and shall remain **scrollable** if content overflows.
+
+3. **FR-3 — Restore behavior**  
+   When the user activates the control again (or equivalent restore action), the card shall return to its **original document position and size** in the page flow; no persisted “minimized to taskbar” state.
+
+4. **FR-4 — Toggle control**  
+   The directive shall render an **icon-only** toggle in the **top-right** of the card, with **visible states** for normal vs maximized (icons per product default), **accessible name** (aria-label / title) and **translated tooltips** where the app standard requires (en/tr/fr/de).
+
+5. **FR-5 — Keyboard and focus**  
+   While maximized, **Escape** shall restore the card; focus management shall not trap the user in an inaccessible state (no regression vs WCAG baseline for the shell).
+
+### Non-functional requirements (BA level)
+
+- **Performance:** Toggle shall not cause noticeable jank on typical dashboard pages; avoid forced synchronous layout where possible.
+- **Accessibility:** Toggle must be keyboard-focusable and have a non-empty accessible name; maximized overlay should not break screen reader context more than other full-screen modals in the app (document any known limitation).
+- **Compatibility:** Behavior must work on **narrow / mobile** viewports (full viewport still meaningful; touch targets meet existing button standards).
+- **Regression:** No breakage to **PrimeNG overlays** (dialogs, menus, datepickers) that are opened **from inside** a card — z-index and stacking must be defined so overlays remain usable (see edge cases).
+
+### Acceptance criteria
+
+- [x] Every targeted **`<div class="card">`** exposes the **maximize/restore** control in the **top-right** (or documented exception list if any card is excluded by product).
+- [x] **Maximize** fills the viewport as a **fixed overlay** with **backdrop** and **scrollable** inner content when needed.
+- [x] **Restore** (toggle or equivalent) returns the card to **normal** inline layout.
+- [x] **Escape** while maximized **restores** the card.
+- [x] **No regression** on primary flows: station-management grid, dashboard widgets, locations/profile forms, dialogs/menus opened from card content (smoke checklist).
+- [x] **`ng build`** succeeds; **i18n** keys added for tooltips/labels in **en/tr/fr/de** if user-visible strings are introduced.
+
+### Implementation approach
+
+- **Primary:** **`CardMaximizeDirective`** on the card root: injects or projects a **toggle button** into the **top-right** (e.g. absolutely positioned wrapper or prepend to `card-actions` when present — engineering to choose minimal DOM disruption).
+- **State styling:** **CSS classes** on the card (or a wrapping host) for maximized mode: `position: fixed`, full viewport, high `z-index`, inner `overflow: auto`, backdrop element or `::backdrop` / sibling — match Sakai tokens where possible.
+- **Events:** **HostListener** for `keydown.escape` when maximized; optional **click on backdrop** to restore (nice-to-know; default **off** unless product wants it — document in open questions).
+- **Alternative considered:** **Wrapper component** `<app-card>...</app-card>` — heavier migration; **directive** is preferred for **existing markup**.
+
+### Implementation breakdown
+
+- [x] **(a)** Create **`CardMaximizeDirective`** with maximize/restore toggle logic, stacking rule (single maximized instance), and Escape handling.
+- [x] **(b)** Add **global or scoped SCSS** for maximized state, backdrop, and optional transition; ensure **z-index** above layout shell and coordination with PrimeNG overlays.
+- [x] **(c)** Apply directive to **`station-management-list`** card as **first integration** (pilot).
+- [x] **(d)** Apply directive to **dashboard widgets** (stats, recent sales, revenue stream, bestselling, notifications, etc.).
+- [x] **(e)** Apply directive to **remaining** pages: dashboard stations, locations, profile / change password, notifications, empty, documentation, and **UI kit demos** as required by “all cards” scope.
+- [x] **(f)** Add **i18n** for tooltip / aria strings (**en/tr/fr/de**).
+- [x] **(g)** **Unit tests** for directive (toggle state, Escape, stacking/default restore of previous card if implemented).
+- [x] **(h)** **Build verification** and manual smoke (maximize/restore, scroll, dialog from card, mobile width).
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **Nested cards** | If a card contains inner `.card` blocks (unusual), **only the host** with the directive maximizes; inner cards do not double-overlay unless each has directive — **avoid nested maximize** or document exclusion. |
+| **Multiple maximized cards** | Per product default: **only one** maximized at a time; second activation **restores** the first or directive **refuses** second maximize — pick one and test. |
+| **Mobile / small viewport** | Full-screen overlay still usable; **scroll** works; toggle remains reachable (not hidden under fixed chrome). |
+| **Card with no title/header** | Toggle still appears **top-right** of the card box (absolute positioning relative to card root). |
+| **PrimeNG `Dialog` / `OverlayPanel` / `p-menu` from card** | Maximized card **z-index** must be **below** modal overlays **or** overlays portal to `body` and still appear **above** maximized card — **verify** stacking; no unreadable menus behind backdrop. |
+| **Router navigation while maximized** | On route change, **restore** maximized state to avoid orphaned fixed elements (default). |
+| **SSR / hydration** | Directive runs **browser-only**; no `document`/`window` access without platform guard if applicable. |
+
+### Out of scope
+
+- **Drag** or **user-resize** of the maximized panel edges.
+- **Minimize to taskbar** / dock / tray or persistent “collapsed strip” outside the card.
+- **Persisting** maximized state across reloads or sessions (`localStorage`).
+- Replacing all cards with **`p-card`** or redesigning Sakai card markup globally beyond what the directive requires.
+
+### Resolved questions
+
+1. **Backdrop click** — **YES**: clicking the backdrop restores the card (in addition to toggle button + Escape).
+2. **z-index contract** — Confirm with one **dialog opened from maximized card** scenario during implementation.
+3. **UI kit / demo-only pages** — **YES**: all demo cards in UI kit are in scope.
+4. **Animation** — **YES**: include a subtle CSS transition on expand/collapse.
+
+### Validation
+
+- **Build:** `ng build` (project standard).
+- **Manual:** Maximize/restore on station-management + one dashboard widget + one form page; open **p-menu** / **dialog** from inside maximized card; **Escape**; narrow viewport; **two cards** with directive on same page (stacking rule).

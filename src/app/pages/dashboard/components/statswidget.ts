@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     standalone: true,
     selector: 'app-stats-widget',
-    imports: [CommonModule],
+    imports: [CommonModule, CardMaximizeDirective],
     template: `<div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
+            <div class="card mb-0" appCardMaximize>
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Orders</span>
@@ -21,7 +22,7 @@ import { CommonModule } from '@angular/common';
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
+            <div class="card mb-0" appCardMaximize>
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Revenue</span>
@@ -36,7 +37,7 @@ import { CommonModule } from '@angular/common';
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
+            <div class="card mb-0" appCardMaximize>
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Customers</span>
@@ -51,7 +52,7 @@ import { CommonModule } from '@angular/common';
             </div>
         </div>
         <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
+            <div class="card mb-0" appCardMaximize>
                 <div class="flex justify-between mb-4">
                     <div>
                         <span class="block text-muted-color font-medium mb-4">Comments</span>

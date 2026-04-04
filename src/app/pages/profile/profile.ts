@@ -11,6 +11,7 @@ import { validate } from '@/app/shared/validated-input/validators';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 import { AvatarEditorDialogComponent } from './avatar-editor-dialog.component';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 const MAX_BYTES = 1048576;
 
@@ -25,12 +26,13 @@ const MAX_BYTES = 1048576;
         MessageModule,
         ValidatedInputComponent,
         TranslatePipe,
-        AvatarEditorDialogComponent
+        AvatarEditorDialogComponent,
+        CardMaximizeDirective
     ],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12 lg:col-span-8 xl:col-span-6">
-                <div class="card flex flex-col gap-6">
+                <div class="card flex flex-col gap-6" appCardMaximize>
                     <div>
                         <h3 class="card-title">{{ 'profile.title' | t }}</h3>
                         <p class="text-muted-color m-0">{{ 'profile.subtitle' | t }}</p>

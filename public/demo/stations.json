@@ -34,7 +34,7 @@
         {
             "id": 4362,
             "stationInfoId": 4362,
-            "name": "XYZ",
+            "name": "ŞAŞKIN PETROL",
             "address": "asdresdsasdasd",
             "phone": "1231231231",
             "cityId": 2,
@@ -78,7 +78,7 @@
         {
             "id": 4360,
             "stationInfoId": 4360,
-            "name": "test lokasyon kod",
+            "name": "SAHİL AKARYAKIT",
             "address": "1111111111111111",
             "phone": "11111111111",
             "cityId": 1,
@@ -144,7 +144,7 @@
         {
             "id": 4354,
             "stationInfoId": 4354,
-            "name": "Test istasyonu",
+            "name": "ILGIN PETROL",
             "address": "asdasdasdasdhghf",
             "phone": "2123123123",
             "cityId": 2,
@@ -166,7 +166,7 @@
         {
             "id": 4353,
             "stationInfoId": 4353,
-            "name": "Test Loc.",
+            "name": "ÜÇGEN TİCARET",
             "address": null,
             "phone": null,
             "cityId": 0,
@@ -188,7 +188,7 @@
         {
             "id": 4344,
             "stationInfoId": 4344,
-            "name": "Opet Station",
+            "name": "İLKER PETROL",
             "address": "Adres",
             "phone": "1231231231",
             "cityId": 15,

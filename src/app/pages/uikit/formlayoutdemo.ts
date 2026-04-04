@@ -7,15 +7,16 @@ import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
 import { ValidatedInputComponent } from '@/app/shared/validated-input/validated-input.component';
 import { ValidationRule } from '@/app/shared/validated-input/validated-input.contract';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-formlayout-demo',
     standalone: true,
-    imports: [InputTextModule, FluidModule, ButtonModule, SelectModule, FormsModule, TextareaModule, ValidatedInputComponent],
+    imports: [InputTextModule, FluidModule, ButtonModule, SelectModule, FormsModule, TextareaModule, ValidatedInputComponent, CardMaximizeDirective],
     template: `<p-fluid>
         <div class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
 
                     <div class="card-header">
                         <div class="card-heading">
@@ -59,7 +60,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
                     </div>
                 </div>
 
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Vertical Grid</div>
                     <div class="flex flex-wrap gap-6">
                         <div class="flex flex-col grow basis-0 gap-2">
@@ -74,7 +75,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Horizontal</div>
                     <div class="grid grid-cols-12 gap-4 grid-cols-12 gap-2">
                         <label for="name3" class="flex items-center col-span-12 mb-2 md:col-span-2 md:mb-0">Name</label>
@@ -90,7 +91,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
                     </div>
                 </div>
 
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Inline</div>
                     <div class="flex flex-wrap items-start gap-6">
                         <div class="field">
@@ -104,7 +105,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
                         <p-button label="Submit" [fluid]="false"></p-button>
                     </div>
                 </div>
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Help Text</div>
                     <div class="flex flex-wrap gap-2">
                         <label for="username">Username</label>
@@ -116,7 +117,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
         </div>
 
         <div class="flex mt-8">
-            <div class="card flex flex-col gap-6 w-full">
+            <div class="card flex flex-col gap-6 w-full" appCardMaximize>
                 <div class="font-semibold text-xl">Advanced</div>
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="flex flex-wrap gap-2 w-full">

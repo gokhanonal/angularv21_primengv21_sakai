@@ -30,6 +30,7 @@ import { CountryService } from '@/app/pages/service/country.service';
 import { NodeService } from '@/app/pages/service/node.service';
 import { TreeNode } from 'primeng/api';
 import { Country } from '@/app/pages/service/customer.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-input-demo',
@@ -61,11 +62,12 @@ import { Country } from '@/app/pages/service/customer.service';
         MultiSelectModule,
         ListboxModule,
         InputGroupAddonModule,
-        TextareaModule
+        TextareaModule,
+        CardMaximizeDirective
     ],
     template: ` <p-fluid class="flex flex-col md:flex-row gap-8">
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">InputText</div>
                     <div class="flex flex-col md:flex-row gap-4">
                         <input pInputText type="text" placeholder="Default" />
@@ -102,7 +104,7 @@ import { Country } from '@/app/pages/service/customer.service';
                     <p-inputnumber [(ngModel)]="inputNumberValue" showButtons mode="decimal"></p-inputnumber>
                 </div>
 
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Slider</div>
                     <input pInputText [(ngModel)]="sliderValue" type="number" />
                     <p-slider [(ngModel)]="sliderValue" />
@@ -123,7 +125,7 @@ import { Country } from '@/app/pages/service/customer.service';
                 </div>
             </div>
             <div class="md:w-1/2">
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">RadioButton</div>
                     <div class="flex flex-col md:flex-row gap-4">
                         <div class="flex items-center">
@@ -160,7 +162,7 @@ import { Country } from '@/app/pages/service/customer.service';
                     <p-toggleswitch [(ngModel)]="switchValue" />
                 </div>
 
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">Listbox</div>
                     <p-listbox [(ngModel)]="listboxValue" [options]="listboxValues" optionLabel="name" [filter]="true" />
 
@@ -189,7 +191,7 @@ import { Country } from '@/app/pages/service/customer.service';
                     <p-treeselect [(ngModel)]="selectedNode" [options]="treeSelectNodes" placeholder="Select Item"></p-treeselect>
                 </div>
 
-                <div class="card flex flex-col gap-4">
+                <div class="card flex flex-col gap-4" appCardMaximize>
                     <div class="font-semibold text-xl">ToggleButton</div>
                     <p-togglebutton [(ngModel)]="toggleValue" onLabel="Yes" offLabel="No" [style]="{ width: '10em' }" />
 
@@ -200,7 +202,7 @@ import { Country } from '@/app/pages/service/customer.service';
         </p-fluid>
 
         <p-fluid class="flex mt-8">
-            <div class="card flex flex-col gap-6 w-full">
+            <div class="card flex flex-col gap-6 w-full" appCardMaximize>
                 <div class="font-semibold text-xl">InputGroup</div>
                 <div class="flex flex-col md:flex-row gap-6">
                     <p-inputgroup>

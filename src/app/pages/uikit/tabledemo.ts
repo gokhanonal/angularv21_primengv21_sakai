@@ -19,6 +19,7 @@ import { TagModule } from 'primeng/tag';
 import { Customer, CustomerService, Representative } from '@/app/pages/service/customer.service';
 import { Product, ProductService } from '@/app/pages/service/product.service';
 import {ObjectUtils} from "primeng/utils";
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 interface expandedRows {
     [key: string]: boolean;
@@ -43,9 +44,10 @@ interface expandedRows {
         ButtonModule,
         RatingModule,
         RippleModule,
-        IconFieldModule
+        IconFieldModule,
+        CardMaximizeDirective
     ],
-    template: ` <div class="card">
+    template: ` <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">Filtering</div>
             <p-table
                 #dt1
@@ -201,7 +203,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">Frozen Columns</div>
             <p-togglebutton [(ngModel)]="balanceFrozen" [onIcon]="'pi pi-lock'" offIcon="pi pi-lock-open" [onLabel]="'Balance'" offLabel="Balance" />
 
@@ -237,7 +239,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">Row Expansion</div>
             <p-table [value]="products" dataKey="id" [tableStyle]="{ 'min-width': '60rem' }" [expandedRowKeys]="expandedRows">
                 <ng-template #caption>
@@ -328,7 +330,7 @@ interface expandedRows {
             </p-table>
         </div>
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl mb-4">Grouping</div>
             <p-table [value]="customers3" sortField="representative.name" sortMode="single" [scrollable]="true" scrollHeight="400px" rowGroupMode="subheader" groupRowsBy="representative.name" [tableStyle]="{ 'min-width': '60rem' }">
                 <ng-template #header>

@@ -10,13 +10,14 @@ import { I18nService } from '@/app/core/i18n/i18n.service';
 import { stationManagementCompanyLogoSrc } from './station-management-logo';
 import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-station-management-detail',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, TabsModule, TagModule, TranslatePipe],
+    imports: [CommonModule, RouterModule, ButtonModule, TabsModule, TagModule, TranslatePipe, CardMaximizeDirective],
     template: `
-        <div class="card mb-4">
+        <div class="card mb-4" appCardMaximize>
             @if (loading()) {
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                     <p class="text-surface-500 dark:text-surface-400 m-0 min-w-0">{{ 'stationMgmt.loading' | t }}</p>

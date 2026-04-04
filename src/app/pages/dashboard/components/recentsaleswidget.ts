@@ -4,12 +4,13 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { Product, ProductService } from '@/app/pages/service/product.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     standalone: true,
     selector: 'app-recent-sales-widget',
-    imports: [CommonModule, TableModule, ButtonModule, RippleModule],
-    template: `<div class="card mb-8!">
+    imports: [CommonModule, TableModule, ButtonModule, RippleModule, CardMaximizeDirective],
+    template: `<div class="card mb-8!" appCardMaximize>
 
         <div class="card-header">
             <div class="card-heading">

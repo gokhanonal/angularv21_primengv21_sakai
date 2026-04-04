@@ -8,6 +8,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { MessageModule } from 'primeng/message';
 import { DashboardMapItemSummary } from './stations.model';
 import { StationsService } from './stations.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 function parseLocationIdParam(raw: string | null): number {
     if (raw == null) {
@@ -20,13 +21,13 @@ function parseLocationIdParam(raw: string | null): number {
 @Component({
     selector: 'app-station-detail',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule, SkeletonModule, MessageModule],
+    imports: [CommonModule, RouterModule, ButtonModule, SkeletonModule, MessageModule, CardMaximizeDirective],
     template: `
         @if (loadError(); as err) {
             <p-message severity="error" styleClass="mb-4 w-full">{{ err }}</p-message>
             <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/stations']" />
         } @else if (loading()) {
-            <div class="card flex flex-col gap-4">
+            <div class="card flex flex-col gap-4" appCardMaximize>
                 <p-skeleton width="40%" height="2rem" />
                 <p-skeleton width="100%" height="1rem" />
                 @for (i of skeletonLines; track i) {
@@ -34,7 +35,7 @@ function parseLocationIdParam(raw: string | null): number {
                 }
             </div>
         } @else if (station(); as st) {
-            <div class="card flex flex-col gap-4">
+            <div class="card flex flex-col gap-4" appCardMaximize>
                 <div class="card-header">
                     <div class="card-heading">
                         <h3 class="card-title">{{ st.name }}</h3>
@@ -63,7 +64,7 @@ function parseLocationIdParam(raw: string | null): number {
                 </div>
             </div>
         } @else {
-            <div class="card flex flex-col gap-4">
+            <div class="card flex flex-col gap-4" appCardMaximize>
                 <div class="font-semibold text-xl">Station not found</div>
                 <p class="text-surface-500 dark:text-surface-400">No station matches this location ID.</p>
                 <p-button label="Back to stations" icon="pi pi-arrow-left" [routerLink]="['/stations']" />

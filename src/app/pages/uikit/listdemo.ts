@@ -8,13 +8,14 @@ import { PickListModule } from 'primeng/picklist';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 import { Product, ProductService } from '@/app/pages/service/product.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-list-demo',
     standalone: true,
-    imports: [CommonModule, DataViewModule, FormsModule, SelectButtonModule, PickListModule, OrderListModule, TagModule, ButtonModule],
+    imports: [CommonModule, DataViewModule, FormsModule, SelectButtonModule, PickListModule, OrderListModule, TagModule, ButtonModule, CardMaximizeDirective],
     template: ` <div class="flex flex-col">
-        <div class="card">
+        <div class="card" appCardMaximize>
             <div class="font-semibold text-xl">DataView</div>
             <p-dataview [value]="products" [layout]="layout">
                 <ng-template #header>
@@ -127,7 +128,7 @@ import { Product, ProductService } from '@/app/pages/service/product.service';
 
         <div class="flex flex-col lg:flex-row gap-20">
             <div class="lg:w-2/3">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">PickList</div>
                     <p-pick-list [source]="sourceCities" [target]="targetCities" breakpoint="1400px">
                         <ng-template #item let-item>
@@ -138,7 +139,7 @@ import { Product, ProductService } from '@/app/pages/service/product.service';
             </div>
 
             <div class="lg:w-1/3">
-                <div class="card">
+                <div class="card" appCardMaximize>
                     <div class="font-semibold text-xl mb-4">OrderList</div>
                     <p-orderlist [value]="orderCities" dataKey="id" breakpoint="575px">
                         <ng-template #option let-option>

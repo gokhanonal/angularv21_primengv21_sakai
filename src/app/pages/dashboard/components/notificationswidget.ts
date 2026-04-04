@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     standalone: true,
     selector: 'app-notifications-widget',
-    imports: [ButtonModule, MenuModule],
-    template: `<div class="card">
+    imports: [ButtonModule, MenuModule, CardMaximizeDirective],
+    template: `<div class="card" appCardMaximize>
         <div class="flex items-center justify-between mb-6">
             <div class="font-semibold text-xl">Notifications</div>
             <div>

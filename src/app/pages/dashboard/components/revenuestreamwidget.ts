@@ -1,12 +1,13 @@
 import { afterNextRender, Component, effect, inject, signal } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
 import { LayoutService } from '@/app/layout/service/layout.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     standalone: true,
     selector: 'app-revenue-stream-widget',
-    imports: [ChartModule],
-    template: `<div class="card mb-8!">
+    imports: [ChartModule, CardMaximizeDirective],
+    template: `<div class="card mb-8!" appCardMaximize>
         <div class="card-header">
             <div class="card-heading">
                 <h3 class="card-title">Monthly Target</h3>

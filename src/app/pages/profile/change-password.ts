@@ -11,15 +11,16 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
 import { validate } from '@/app/shared/validated-input/validators';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-change-password',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, MessageModule, ValidatedInputComponent, TranslatePipe],
+    imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, MessageModule, ValidatedInputComponent, TranslatePipe, CardMaximizeDirective],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <div class="col-span-12 lg:col-span-8 xl:col-span-6">
-                <div class="card flex flex-col gap-6">
+                <div class="card flex flex-col gap-6" appCardMaximize>
                     <div>
                         <div class="font-semibold text-xl mb-1">{{ 'profile.changePassword.title' | t }}</div>
                         <p class="text-muted-color m-0">{{ 'profile.changePassword.subtitle' | t }}</p>

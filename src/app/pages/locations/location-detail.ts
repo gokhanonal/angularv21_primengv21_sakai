@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { STATUS_COLORS, getLocationById } from './location.data';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 function parseLocationIdParam(raw: string | null): number {
     if (raw == null) {
@@ -17,10 +18,10 @@ function parseLocationIdParam(raw: string | null): number {
 @Component({
     selector: 'app-location-detail',
     standalone: true,
-    imports: [CommonModule, RouterModule, ButtonModule],
+    imports: [CommonModule, RouterModule, ButtonModule, CardMaximizeDirective],
     template: `
         @if (location(); as loc) {
-            <div class="card flex flex-col gap-4">
+            <div class="card flex flex-col gap-4" appCardMaximize>
                 <div class="card-header">
                     <div class="card-heading">
                         <h3 class="card-title">{{ loc.site }}</h3>
@@ -55,7 +56,7 @@ function parseLocationIdParam(raw: string | null): number {
                 </div>
             </div>
         } @else {
-            <div class="card flex flex-col gap-4">
+            <div class="card flex flex-col gap-4" appCardMaximize>
                 <div class="font-semibold text-xl">Location not found</div>
                 <p class="text-surface-500 dark:text-surface-400">No site matches this ID.</p>
                 <p-button label="Back to directory" icon="pi pi-arrow-left" [routerLink]="['/locations']" />

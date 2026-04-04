@@ -57,6 +57,7 @@ import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
 import { GridState } from '@/app/core/grid/grid-state.model';
 import { GridStateService } from '@/app/core/grid/grid-state.service';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 const STATION_MGMT_GRID_PAGE = 'station-management';
 const STATION_MGMT_GRID_NAME = 'main';
@@ -135,7 +136,8 @@ function escapeHtmlText(value: string): string {
         SelectModule,
         MenuModule,
         TooltipModule,
-        TranslatePipe
+        TranslatePipe,
+        CardMaximizeDirective
     ],
     providers: [ConfirmationService, MessageService],
     template: `
@@ -147,7 +149,7 @@ function escapeHtmlText(value: string): string {
             <p-button [label]="'stationMgmt.retry' | t" icon="pi pi-refresh" (onClick)="reload()" class="mb-4" />
         }
 
-        <div class="card">
+        <div class="card" appCardMaximize>
             @if (pageTitleText()) {
                 <h3 class="card-title mb-1">{{ pageTitleText() }}</h3>
             }
@@ -700,7 +702,7 @@ export class StationManagementList implements OnInit {
     /** Global search only scans name plus optional columns that are visible (WYSIWYG with column picker). */
     get globalFilterFieldsForTable(): string[] {
         const optional = ['address', 'phone', 'cityName', 'districtName', 'companyName', 'resellerName', 'unitCode'];
-        return ['name', ...optional.filter((k) => this.visibleDataColumnKeys.includes(k))];
+        return ['stationInfoId', 'name', ...optional.filter((k) => this.visibleDataColumnKeys.includes(k))];
     }
 
     ngOnInit(): void {

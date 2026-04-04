@@ -17,6 +17,7 @@ import { StationRow } from './stations.model';
 import { StationsService } from './stations.service';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 const MARKER_ICON_SIZE: L.PointExpression = [32, 32];
 const MARKER_ICON_ANCHOR: L.PointExpression = [16, 32];
@@ -45,7 +46,8 @@ interface StationKpiCard {
         SkeletonModule,
         ButtonModule,
         ToggleButtonModule,
-        TranslatePipe
+        TranslatePipe,
+        CardMaximizeDirective
     ],
     template: `
         @if (loadError(); as errMsg) {
@@ -57,7 +59,7 @@ interface StationKpiCard {
 
             <div class="flex flex-col lg:flex-row gap-4">
                 @if (loading()) {
-                    <div class="card flex-1 min-w-0 p-0 overflow-hidden">
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize>
                         <p-skeleton width="100%" height="380px" styleClass="rounded-none" />
                     </div>
                     <div
@@ -68,7 +70,7 @@ interface StationKpiCard {
                         }
                     </div>
                 } @else {
-                    <div class="card flex-1 min-w-0 p-0 overflow-hidden">
+                    <div class="card flex-1 min-w-0 p-0 overflow-hidden" appCardMaximize>
                         <div class="relative overflow-hidden">
                             @if (!loadError() && uniqueStatuses().length > 0) {
                                 <div
@@ -145,7 +147,7 @@ interface StationKpiCard {
         </div>
 
         @if (loading()) {
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <p-skeleton width="10rem" height="1.5rem" styleClass="mb-4" />
                 @for (rowIdx of skeletonPlaceholders; track rowIdx) {
                     <div class="flex gap-4 mb-3">
@@ -155,7 +157,7 @@ interface StationKpiCard {
                 }
             </div>
         } @else if (!loadError()) {
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">{{ 'stations.tableTitle' | t }}</div>
                 <p-table
                     #stationsDt

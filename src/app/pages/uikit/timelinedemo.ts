@@ -3,14 +3,15 @@ import {TimelineModule} from 'primeng/timeline';
 import {CardModule} from 'primeng/card';
 import {CommonModule} from '@angular/common';
 import {ButtonModule} from 'primeng/button';
+import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
 
 @Component({
     selector: 'app-timeline-demo',
     standalone: true,
-    imports: [CommonModule, TimelineModule, ButtonModule, CardModule],
+    imports: [CommonModule, TimelineModule, ButtonModule, CardModule, CardMaximizeDirective],
     template: `<div class="grid grid-cols-12 gap-8">
         <div class="col-span-12 sm:col-span-6">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Left Align</div>
                 <p-timeline [value]="events1">
                     <ng-template #content let-event>
@@ -20,7 +21,7 @@ import {ButtonModule} from 'primeng/button';
             </div>
         </div>
         <div class="col-span-12 sm:col-span-6">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Right Align</div>
                 <p-timeline [value]="events1" align="right">
                     <ng-template #content let-event>
@@ -30,7 +31,7 @@ import {ButtonModule} from 'primeng/button';
             </div>
         </div>
         <div class="col-span-12 sm:col-span-6">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Alternate Align</div>
                 <p-timeline [value]="events1" align="alternate">
                     <ng-template #content let-event>
@@ -40,7 +41,7 @@ import {ButtonModule} from 'primeng/button';
             </div>
         </div>
         <div class="col-span-12 sm:col-span-6">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Opposite Content</div>
                 <p-timeline [value]="events1">
                     <ng-template #content let-event>
@@ -53,7 +54,7 @@ import {ButtonModule} from 'primeng/button';
             </div>
         </div>
         <div class="col-span-full">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Templating</div>
                 <p-timeline [value]="events1" align="alternate" styleClass="customized-timeline">
                     <ng-template #marker let-event>
@@ -75,7 +76,7 @@ import {ButtonModule} from 'primeng/button';
             </div>
         </div>
         <div class="col-span-full">
-            <div class="card">
+            <div class="card" appCardMaximize>
                 <div class="font-semibold text-xl mb-4">Horizontal</div>
                 <div class="font-semibold mb-2">Top Align</div>
                 <p-timeline [value]="events2" layout="horizontal" align="top">
