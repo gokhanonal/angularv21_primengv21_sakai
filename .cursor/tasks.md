@@ -1258,3 +1258,155 @@ Requirements are **ready for implementation**. Engineering owns **specificity** 
 ### Implementation notes (for backlog — not BA code)
 
 - Target: `station-management-list.ts` (`pFrozenColumn` on `<th>` / `<td>`), coordinated with `station-management-column-autosize.ts` and tests in `station-management-column-autosize.spec.ts`.
+
+## Refactor `ChargingUnitWidget`: table → card layout (per record)
+
+### Source intent (verbatim summary)
+
+Refactor `chargingunitwidget.ts` from **table** to **card** view (one card per record). Stakeholder mentioned **`public/demo/charging_unit_connectors.json`** as data source. **Title:** `<brandName> - <model> - <deviceCode>` with **`hoStatus`** adjacent to the title. **Body fields:** Access Type (`accessType`), Roaming (`sendRoaming`), Is Free (`isFreePoint`), Serial # (`serialNumber`), Investor (`investor`), Creation Date (`createDate`), Last Connection (`lastHeartBeat`), Unit IP (`externalAddress` — task text: “Ünite IP Adresi”). **Photo:** from `charging_unit_photos.json` where `data[].id` matches `charging_unit.json` `modelId`; photo **right** of text, **same row** as unit info.
+
+---
+
+### 1. Summary (BA)
+
+**Problem:** The dashboard widget currently uses **`p-table`** with a narrow column set and a **placeholder** photo; operators need a **scannable card** per unit with richer fields and a **real brand/model image** when available.
+
+**Proposed outcome:** Replace the table with a **vertical list of cards** (or PrimeNG `p-card`-style blocks). Each card shows a **title line** (brand — model — device code + **hoStatus**), a **label/value block** for the eight listed attributes, and a **photo** on the **right** in the **same horizontal row** as the info block (responsive: stack on narrow viewports unless product forbids).
+
+**Key assumptions (validate with product):**
+
+- **One card = one charging unit** row from **`charging_unit.json`** (same grain as today’s table). Field names in the task all exist on **`ChargingUnit`** / raw unit JSON.
+- **`charging_unit_photos.json`** continues to be loaded and joined by **`modelId` ↔ photo `id`**; mapped field **`photoUrl`** on each unit (already implemented in `ChargingUnitService.getChargingUnits()`).
+- **`charging_unit_connectors.json`** is **not** the primary source for the listed unit-level fields (those fields are not on connector rows). Optional use: **enrichment** or alternate grain (see open questions).
+
+---
+
+### 2. Resolved questions
+
+| # | Question | Answer |
+|---|-----------|--------|
+| Q1 | Card grain | **Per unit** from `charging_unit.json` (not per connector). |
+| Q2 | `charging_unit_connectors.json` | **Not required** for v1; future enrichment only. |
+| Q3 | `hoStatus` display | **`p-tag`** (PrimeNG Tag component), same title row. |
+| Q4 | Date formatting | **`DatePipe`** with **time** (e.g. `medium` format including hours:minutes). |
+| Q5 | Booleans (`sendRoaming`, `isFreePoint`) | Display as **icons** (e.g. `pi-check` / `pi-times` with color). |
+| Q6 | Actions (Edit/Delete/Config) | **Keep** — retain no-op icon buttons on each card. |
+
+---
+
+### 3. Functional requirements
+
+- **FR-C1 — Layout:** Remove **`p-table`** as the primary presentation; render **N** cards for **N** records in the loaded list (grain per Q1).
+- **FR-C2 — Title row:** Visible title = **`brandName` + " - " + `model` + " - " + `deviceCode`** (trim segments if product allows empty strings). **`hoStatus`** shown **next to** the title (same row; implementation: flex with wrap).
+- **FR-C3 — Field block:** For each unit, show labeled rows (or grid) for: **Access Type** ← `accessType`; **Roaming** ← `sendRoaming`; **Is Free** ← `isFreePoint`; **Serial #** ← `serialNumber`; **Investor** ← `investor`; **Creation Date** ← `createDate`; **Last Connection** ← `lastHeartBeat`; **Unit IP** ← `externalAddress` (task label “Ünite IP Adresi” → i18n, not hardcoded TR-only).
+- **FR-C4 — Photo:** If **`photoUrl`** is non-null and non-empty, show **`<img>`** (or PrimeNG `Image`) with **meaningful `alt`** (e.g. brand + model + device code from i18n pattern). If missing, show **same placeholder treatment** as prior spec (icon in bordered box) — aligns with earlier widget BA.
+- **FR-C5 — Row layout:** On **desktop**, **text/details left**, **photo right**, **one row** (flex/grid). On **small widths**, **stack** order: title+status → fields → photo (or photo below) — **unless** product mandates horizontal scroll instead.
+- **FR-C6 — Data load:** Continue using **`ChargingUnitService.getChargingUnits()`** (loads **`charging_unit.json`** + **`charging_unit_photos.json`**). If product requires **connectors** in scope, extend service to fetch **`charging_unit_connectors.json`** and define merge rules (e.g. `stationChargePointID` === `chargePointId`).
+- **FR-C7 — i18n:** All **new** visible labels (field names, Yes/No, optional section titles) use **`dashboard.chargingUnits.*`** (or agreed prefix) with **en, tr, fr, de** in `translations.ts`.
+- **FR-C8 — Empty / error:** **Empty list:** show translated empty state (reuse or extend `dashboard.chargingUnits.empty`). **Fetch failure:** service already returns **`[]`** — widget must not throw; optional subtle empty state (same as today).
+- **FR-C9 — Card chrome:** Preserve **dashboard card** wrapper: **`appCardMaximize`**, **`[showWindowMaximize]="true"`**, header area / “Add New” pattern **unless** product removes it; match sibling widgets’ spacing/classes.
+
+---
+
+### 4. Non-functional requirements (BA level)
+
+- **Performance:** Static JSON; avoid re-fetch on every change detection; images lazy-load if supported.
+- **Accessibility:** Labels associated with values (definition list or grid with headers); icon-only actions keep **`aria-label`**; images have **`alt`**.
+- **Security/privacy:** **IP and serial** are display-only; do not log full payloads in production UI.
+- **Consistency:** Match **PrimeNG / Sakai** card styling used elsewhere on dashboard.
+
+---
+
+### 5. Data source clarification
+
+| File | Role in this task |
+|------|-------------------|
+| **`public/demo/charging_unit.json`** | **Primary** list of units; supplies **all** task-listed fields except photo URL. |
+| **`public/demo/charging_unit_photos.json`** | **Photo lookup** by **`id` = unit `modelId`**; exposed as **`photoUrl`** on each unit (existing service). |
+| **`public/demo/charging_unit_connectors.json`** | **Connector-level** rows; join key **`stationChargePointID`** matches unit **`chargePointId`** in sample data. **Does not** contain `brandName`, `deviceCode`, `externalAddress`, etc. Use only if product wants **connector cards** or **enriched** unit cards (e.g. first connector’s `statusName` / `tariffName`). |
+
+**Inference:** The phrase “use again … connectors.json as data source” is likely **imprecise** for the described **unit-level** fields; engineering should implement **unit list + photos** unless Q1 answers **per-connector**.
+
+---
+
+### 6. Card layout specification (wire-level)
+
+```
++------------------------------------------------------------------+
+|  [Title: Brand - Model - DeviceCode]  [hoStatus badge/text]     |
+|  +---------------------------+  +---------------------------+   |
+|  | Access Type:    …         |  |                         |   |
+|  | Roaming:        …         |  |      Photo (img or       |   |
+|  | Is Free:        …         |  |      placeholder)        |   |
+|  | Serial #:       …         |  |      ~same height as     |   |
+|  | Investor:       …         |  |      field block         |   |
+|  | Creation Date:  …         |  |                         |   |
+|  | Last Connection: …        |  |                         |   |
+|  | Unit IP:        …         |  +---------------------------+   |
+|  +---------------------------+                                   |
+|  [Optional: Edit | Delete | Config icon row]                    |
++------------------------------------------------------------------+
+```
+
+- **Null `externalAddress` / other nulls:** show **em dash** or “—” (i18n-safe) per project convention.
+- **Long title:** allow wrap; do not truncate without product rule.
+
+---
+
+### 7. Pagination, sorting, filtering
+
+| Topic | Table (current) | Card refactor (proposed defaults) |
+|-------|-----------------|-----------------------------------|
+| **Pagination** | `p-table` 5 rows | **`p-paginator`** on a computed slice, or **PrimeNG DataView**, or **“Load more”** — **default: keep ~5 items per page** for parity unless product wants infinite scroll. |
+| **Sort** | `deviceCode`, `serialNumber` | **Optional** v1: sort dropdown or **default sort** by `deviceCode`; **nice-to-know** if sort is required day one. |
+| **Filter** | None | **Out of scope** unless requested. |
+
+---
+
+### 8. Edge cases and negative scenarios
+
+| Scenario | Expected |
+|----------|----------|
+| **`photoUrl` null** | Placeholder icon; no broken image. |
+| **Image URL 404 / load error** | **`(error)`** handler falls back to placeholder (recommended). |
+| **Very long `accessType` / investor** | Wrap; card min-width / scroll within dashboard column. |
+| **Many units (e.g. 50+)** | Paginator or virtual scroll; avoid DOM blowup. |
+| **`success: false` / network error** | Empty list; no uncaught errors. |
+| **RTL** | Layout mirrors where app already supports RTL. |
+
+---
+
+### 9. Acceptance criteria (testable)
+
+- [x] Widget renders **cards** instead of **`p-table`** for the unit list (grain per Q1).
+- [x] Each card shows **title** `brandName - model - deviceCode` and **hoStatus** on the **same title row** (allow wrap).
+- [x] All **eight** labeled fields display correct bindings; **nulls** do not break template.
+- [x] **Photo** uses **`photoUrl`** when present; **placeholder** when absent; **positioned right** of details on wide layout **same row**.
+- [x] **i18n:** new field labels (+ Yes/No if used) in **en, tr, fr, de**.
+- [x] **`ng build`** and **widget/service tests** green; manual: dashboard load, maximize card, language switch, narrow viewport stack behavior.
+
+---
+
+### 10. Implementation breakdown (for engineering)
+
+- [x] Refactor **`chargingunitwidget.ts` template:** remove `TableModule` if unused; add layout (flex/grid or `p-card`). Use `DatePipe` with time for dates, icons for booleans, `p-tag` for `hoStatus`.
+- [x] Implement **pagination** for card list (if keeping 5-per-page parity).
+- [x] Wire **`<img>`** to `unit.photoUrl` + error fallback; keep **placeholder** path.
+- [x] Add **i18n keys** in `translations.ts` for field labels and **Unit IP** (TR equivalent for “Ünite IP Adresi” in `tr` bundle).
+- [x] Optional **`ChargingUnitService`** + **`charging_unit_connectors.json`** enrichment — **skipped** (Q2: not required for v1).
+- [x] Update **`chargingunitwidget.spec.ts`** (and service tests if service changes).
+- [x] Remove stray template typos if any (e.g. `--` after translated strings) **if still present** — housekeeping.
+
+---
+
+### 11. Out of scope (unless product expands)
+
+- **Live API**, real **Edit/Delete/Config** behavior.
+- **Full connector grid** (tariff, kW, Type) on each card without Q2/Q1 approval.
+- **Persisted** user preferences for sort/filter on this widget.
+
+---
+
+### 12. Handoff
+
+All questions resolved. **Per unit** cards from `charging_unit.json`. `hoStatus` as `p-tag`. Dates via `DatePipe` with time. Booleans as icons. Edit/Delete/Config buttons kept. Connectors not needed for v1.

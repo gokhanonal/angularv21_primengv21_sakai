@@ -1,8 +1,10 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RippleModule } from 'primeng/ripple';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { PaginatorModule } from 'primeng/paginator';
+import { TagModule } from 'primeng/tag';
+import type { PaginatorState } from 'primeng/paginator';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
 import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
@@ -10,88 +12,227 @@ import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 @Component({
     standalone: true,
     selector: 'app-charging-unit-widget',
-    imports: [CommonModule, TableModule, ButtonModule, RippleModule, CardMaximizeDirective, TranslatePipe],
+    imports: [
+        CommonModule,
+        DatePipe,
+        ButtonModule,
+        RippleModule,
+        PaginatorModule,
+        TagModule,
+        CardMaximizeDirective,
+        TranslatePipe
+    ],
     template: `<div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
         <div class="card-header">
-
             <div class="card-actions">
                 <a href="#" class="card-action-link" (click)="$event.preventDefault()">
-                <i class="pi pi-plus"></i>
+                    <i class="pi pi-plus"></i>
                     {{ 'dashboard.chargingUnits.addNew' | t }}
                 </a>
             </div>
         </div>
         <div class="card-header-divider"></div>
 
-        <p-table [value]="units()" [paginator]="true" [rows]="5" responsiveLayout="scroll">
-            <ng-template #header>
-                <tr>
-                    <th>{{ 'dashboard.chargingUnits.colPhoto' | t }}</th>
-                    <th pSortableColumn="deviceCode">
-                        {{ 'dashboard.chargingUnits.colDeviceCode' | t }}
-                        <p-sortIcon field="deviceCode"></p-sortIcon>
-                    </th>
-                    <th pSortableColumn="serialNumber">
-                        {{ 'dashboard.chargingUnits.colSerial' | t }}
-                        <p-sortIcon field="serialNumber"></p-sortIcon>
-                    </th>
-                    <th>{{ 'dashboard.chargingUnits.colActions' | t }}</th>
-                </tr>
-            </ng-template>
-            <ng-template #body let-unit>
-                <tr>
-                    <td style="width: 15%; min-width: 5rem;">
-                        <span
-                            class="inline-flex items-center justify-center w-[3.125rem] h-[3.125rem] rounded-border border border-surface-200 dark:border-surface-700"
-                            role="img"
+        <div class="flex flex-col gap-4">
+            @for (unit of pagedUnits(); track unit.deviceCode) {
+                <div
+                    class="charging-unit-card rounded-border border border-surface-200 dark:border-surface-700 p-4"
+                    [attr.data-device-code]="unit.deviceCode"
+                >
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+                        <div class="min-w-0 flex-1">
+                            <div class="mb-3 flex flex-wrap items-center gap-2">
+                                <h3 class="m-0 text-lg font-semibold">
+                                    {{ unit.brandName }} - {{ unit.model }} - {{ unit.deviceCode }}
+                                </h3>
+                                <p-tag [value]="hoStatusDisplay(unit)" />
+                            </div>
+                            <div class="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelAccessType' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{ displayText(unit.accessType) }}</span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelRoaming' | t
+                                    }}</span>
+                                    <span class="font-medium">
+                                        <i
+                                            class="pi text-lg"
+                                            [ngClass]="
+                                                unit.sendRoaming ? 'pi-check text-green-600' : 'pi-times text-red-500'
+                                            "
+                                            aria-hidden="true"
+                                        ></i>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelIsFree' | t
+                                    }}</span>
+                                    <span class="font-medium">
+                                        <i
+                                            class="pi text-lg"
+                                            [ngClass]="
+                                                unit.isFreePoint ? 'pi-check text-green-600' : 'pi-times text-red-500'
+                                            "
+                                            aria-hidden="true"
+                                        ></i>
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelSerial' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{ displayText(unit.serialNumber) }}</span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelInvestor' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{ displayText(unit.investor) }}</span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelCreationDate' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{
+                                        unit.createDate ? (unit.createDate | date: 'medium') : emDash
+                                    }}</span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelLastConnection' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{
+                                        unit.lastHeartBeat ? (unit.lastHeartBeat | date: 'medium') : emDash
+                                    }}</span>
+                                </div>
+                                <div class="grid grid-cols-[minmax(0,auto)_1fr] items-center gap-x-3 gap-y-1 text-sm">
+                                    <span class="text-muted-color whitespace-nowrap">{{
+                                        'dashboard.chargingUnits.labelUnitIp' | t
+                                    }}</span>
+                                    <span class="font-medium break-words">{{ displayText(unit.externalAddress) }}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-1">
+                                <button
+                                    pButton
+                                    pRipple
+                                    type="button"
+                                    icon="pi pi-pencil"
+                                    class="p-button p-component p-button-text p-button-rounded p-button-icon-only mr-1"
+                                    [attr.aria-label]="'dashboard.chargingUnits.editAria' | t"
+                                    (click)="$event.preventDefault()"
+                                ></button>
+                                <button
+                                    pButton
+                                    pRipple
+                                    type="button"
+                                    icon="pi pi-trash"
+                                    class="p-button p-component p-button-text p-button-rounded p-button-icon-only mr-1"
+                                    [attr.aria-label]="'dashboard.chargingUnits.deleteAria' | t"
+                                    (click)="$event.preventDefault()"
+                                ></button>
+                                <button
+                                    pButton
+                                    pRipple
+                                    type="button"
+                                    icon="pi pi-cog"
+                                    class="p-button p-component p-button-text p-button-rounded p-button-icon-only"
+                                    [attr.aria-label]="'dashboard.chargingUnits.configAria' | t"
+                                    (click)="$event.preventDefault()"
+                                ></button>
+                            </div>
+                        </div>
+                        <div
+                            class="flex shrink-0 justify-center lg:w-36 lg:justify-end"
                             [attr.aria-label]="'dashboard.chargingUnits.photoAlt' | t"
                         >
-                            <i class="pi pi-bolt text-xl text-muted-color" aria-hidden="true"></i>
-                        </span>
-                    </td>
-                    <td style="width: 35%; min-width: 7rem;">{{ unit.deviceCode }}</td>
-                    <td style="width: 35%; min-width: 8rem;">{{ unit.serialNumber }}</td>
-                    <td style="width: 15%;">
-                        <button
-                            pButton
-                            pRipple
-                            type="button"
-                            icon="pi pi-pencil"
-                            class="p-button p-component p-button-text p-button-rounded p-button-icon-only mr-1"
-                            [attr.aria-label]="'dashboard.chargingUnits.editAria' | t"
-                            (click)="$event.preventDefault()"
-                        ></button>
-                        <button
-                            pButton
-                            pRipple
-                            type="button"
-                            icon="pi pi-trash"
-                            class="p-button p-component p-button-text p-button-rounded p-button-icon-only mr-1"
-                            [attr.aria-label]="'dashboard.chargingUnits.deleteAria' | t"
-                            (click)="$event.preventDefault()"
-                        ></button>
-                        <button
-                            pButton
-                            pRipple
-                            type="button"
-                            icon="pi pi-cog"
-                            class="p-button p-component p-button-text p-button-rounded p-button-icon-only"
-                            [attr.aria-label]="'dashboard.chargingUnits.configAria' | t"
-                            (click)="$event.preventDefault()"
-                        ></button>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
+                            @if (showUnitPhoto(unit)) {
+                                <img
+                                    [src]="unit.photoUrl!"
+                                    [alt]="unit.brandName + ' ' + unit.model + ' ' + unit.deviceCode"
+                                    class="h-28 w-28 rounded-border border border-surface-200 object-cover dark:border-surface-700"
+                                    (error)="onPhotoError(unit)"
+                                />
+                            } @else {
+                                <span
+                                    class="inline-flex h-28 w-28 items-center justify-center rounded-border border border-surface-200 dark:border-surface-700"
+                                    role="img"
+                                >
+                                    <i class="pi pi-bolt text-3xl text-muted-color" aria-hidden="true"></i>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            } @empty {
+                <p class="text-muted-color m-0 text-sm">{{ 'dashboard.chargingUnits.empty' | t }}</p>
+            }
+        </div>
+
+        @if (units().length > pageSize) {
+            <p-paginator
+                class="mt-4"
+                [rows]="pageSize"
+                [totalRecords]="units().length"
+                [first]="first()"
+                (onPageChange)="onPageChange($event)"
+            />
+        }
     </div>`,
     providers: [ChargingUnitService]
 })
 export class ChargingUnitWidget implements OnInit {
     readonly units = signal<ChargingUnit[]>([]);
+    readonly first = signal(0);
+    readonly pageSize = 5;
+    readonly emDash = '\u2014';
+
+    readonly pagedUnits = computed(() => {
+        const list = this.units();
+        const start = this.first();
+        return list.slice(start, start + this.pageSize);
+    });
+
+    private readonly photoBrokenKeys = signal<ReadonlySet<string>>(new Set());
 
     private readonly chargingUnitService = inject(ChargingUnitService);
 
     ngOnInit(): void {
-        this.chargingUnitService.getChargingUnits().then((data) => this.units.set(data));
+        this.chargingUnitService.getChargingUnits().then((data) => {
+            this.first.set(0);
+            this.photoBrokenKeys.set(new Set());
+            this.units.set(data);
+        });
+    }
+
+    onPageChange(event: PaginatorState): void {
+        this.first.set(event.first ?? 0);
+    }
+
+    displayText(value: string | null | undefined): string {
+        if (value === null || value === undefined || String(value).trim() === '') {
+            return this.emDash;
+        }
+        return value;
+    }
+
+    hoStatusDisplay(unit: ChargingUnit): string {
+        const v = unit.hoStatus?.trim();
+        return v ? v : this.emDash;
+    }
+
+    showUnitPhoto(unit: ChargingUnit): boolean {
+        return !!unit.photoUrl && !this.photoBrokenKeys().has(unit.deviceCode);
+    }
+
+    onPhotoError(unit: ChargingUnit): void {
+        const next = new Set(this.photoBrokenKeys());
+        next.add(unit.deviceCode);
+        this.photoBrokenKeys.set(next);
     }
 }
