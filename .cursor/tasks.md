@@ -1080,3 +1080,108 @@ Before the station pictures feature, refactor `AvatarEditorDialogComponent` (cur
 ### Handoff
 
 All blocking questions resolved. Engineering implements per **FR** and **resolved questions**. Columns: Photo, Device code, Serial number, Actions (Edit/Delete/Configuration no-op buttons). Photo: placeholder icon. View More: no navigation.
+
+## CardMaximizeDirective: optional card border (`showBorder`, default true)
+
+### Source intent
+
+> Whether the border is on the card div is shown or not depends on a property. and default value is true
+
+### Goal
+
+Extend **`CardMaximizeDirective`** (`[appCardMaximize]` on `<div class="card">`) with a **boolean input** that controls whether the **host card** shows the standard `.card` border from global layout SCSS (`1px solid var(--surface-border)` in `src/assets/layout/_utils.scss`). **Default `true`** preserves today’s appearance on all **~31+** existing usages (no visual regression). When `false`, the border shall not be shown on that card instance.
+
+### Product decisions (defaults)
+
+| Topic | Default |
+|--------|--------|
+| **Input name** | **`showBorder`** — aligns with existing `showWindowMaximize` / `showClose` naming (`show*` + boolean). |
+| **Default** | **`true`** — border visible; matches current global `.card` rule. |
+| **Scope** | **Per host element** where the directive is applied. Cards **without** `appCardMaximize` keep current global styling unchanged (no new global API in v1). |
+| **Maximized / restore** | Border visibility follows **`showBorder`** in **normal and maximized** states unless product explicitly requests a different rule (recommended: **same** in all states for predictability). |
+| **Other chrome** | **No change** to maximize/close button behavior, backdrop, hover/focus control visibility, Escape handling, or `closed` output — border is **purely presentational**. |
+
+### Functional requirements
+
+1. **FR-1 — New input**  
+   The directive shall expose a signal-based input **`showBorder`** with default **`true`**.
+
+2. **FR-2 — Border off**  
+   When **`showBorder` is `false`**, the host shall **not** display the standard card border (equivalent visual outcome: no `1px solid var(--surface-border)` on the card edge for that instance).
+
+3. **FR-3 — Border on**  
+   When **`showBorder` is `true`** (default), the host shall match **current** `.card` border appearance (no regression vs pre-change).
+
+4. **FR-4 — Reactivity**  
+   If **`showBorder` changes at runtime** (e.g. bound to a component signal), border visibility shall **update** without a full page reload.
+
+5. **FR-5 — SSR / prerender**  
+   Border on/off shall be **consistent** for server-rendered markup where the directive runs (no flash of wrong border solely due to client-only application of the rule — implementation should use **`Renderer2` + class** or equivalent pattern that applies in both environments).
+
+6. **FR-6 — Cleanup**  
+   On destroy, the directive shall **not** leave stale classes or inline border styles that affect a replaced host (normal Angular teardown expectations).
+
+### Non-functional requirements
+
+- **NFR-1 — Theming** — Solution shall work with **light/dark** and CSS variable updates (prefer **class + SCSS** over hard-coded color in TS).
+- **NFR-2 — Performance** — Negligible cost: one class toggle or equivalent per host; no layout thrash on unrelated cards.
+- **NFR-3 — Consistency** — Match existing directive patterns (`input()`, `effect()` for syncing related UI where appropriate).
+
+### Technical approach (BA-level, for engineering)
+
+- **Recommended:** Add a utility class on the host (e.g. **`card--no-border`**) defined in layout SCSS with `border: none` (or `border-color: transparent` if box model edge cases appear — engineering validates). **Avoid** duplicating full `.card` rules on the host.
+- **Alternative:** Inline `border` via `Renderer2` — acceptable if class approach conflicts with specificity; document trade-off (specificity vs theming).
+- **Do not** remove or weaken the global `.card` rule in `_utils.scss` unless product wants **all** cards borderless by default (out of scope for this task).
+
+### Relationship to maximize / close / backdrop
+
+| Area | Expected impact |
+|------|------------------|
+| **Maximize / restore** | **None** on logic; only ensure **z-index / fixed positioning** (`card--maximized`) still read correctly with or without border. |
+| **Backdrop** | **None**. |
+| **Control buttons** | **None**. |
+| **Hover / `card-controls` visibility** | **None** (controls are independent of card border). |
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected behavior |
+|----------|-------------------|
+| **`showBorder` false + maximized** | Card remains **borderless** (default product rule) unless stakeholder overrides. |
+| **Theme / `--surface-border` change** | With **class-based** `border: none`, border stays off; with `true`, border **tracks** theme variables via global `.card`. |
+| **Nested `.card` elements** | Only the **element with the directive** gets the modifier; inner `.card` children unaffected unless they have their own `appCardMaximize`. |
+| **`showBorder` toggled while maximized** | Border state **updates**; layout shift should be **minimal** (1px). |
+| **Card without directive** | Still uses global `.card` border — **no** new property available unless future work adds a second mechanism. |
+| **PrimeNG / third-party inner components** | Inner widgets may have **their own** borders — this FR applies only to the **host** `div.card`. |
+
+### Acceptance criteria
+
+- [x] **`showBorder` defaults to `true`**: existing templates **without** the new attribute look **identical** to before (border present).
+- [x] **`[showBorder]="false"`** (or signal false): host card shows **no** outer border matching the current `.card` border.
+- [x] **Runtime toggle**: changing bound value updates border visibility **without** navigation.
+- [x] **Maximized state**: maximize, backdrop, Escape restore, and controls still work; no visual glitch that blocks reading content (spot-check one screen with `showWindowMaximize`).
+- [x] **`ng build`** succeeds; quick **visual smoke** on at least one dashboard card with and without border.
+- [x] **SSR/prerender** (if used): no inconsistent border for the same template in initial HTML vs hydration (engineering confirms).
+
+### Implementation breakdown (engineering checklist)
+
+1. Add **`showBorder = input(true)`** to `card-maximize.directive.ts`.
+2. Subscribe to changes (e.g. **`effect()`** or extend existing effect) to **`addClass` / `removeClass`** on the host for the no-border modifier when `showBorder()` is false/true.
+3. Add SCSS rule (e.g. in `_utils.scss` next to `.card` or a small partial) for **`.card.card--no-border`** (or `.card--no-border` with sufficient specificity) so it overrides `.card { border: ... }`.
+4. Manually verify **one** consumer with `[showBorder]="false"`; leave **existing** usages unchanged (default true).
+5. Optional: one-line note in directive or internal wiki — **attribute name + default**.
+
+### Out of scope
+
+- Global “all cards borderless” or changing the **default** `.card` style for non-directive cards.
+- **Per-theme** different `showBorder` defaults.
+- **Box-shadow** removal or padding changes (unless product explicitly ties “borderless” to “flat card” — clarify before implementing).
+- **Border-radius** or **margin** changes tied to this flag.
+
+### Open questions
+
+1. **Nice-to-know:** Should **borderless** cards also drop **box-shadow** for a fully flat panel? (Current FR is **border only**.)
+2. **Nice-to-know:** Any **design token** name preferred by UX (e.g. “elevated” vs “flat”) for documentation only?
+
+### Handoff
+
+Requirements are **ready for implementation**. Engineering owns **specificity** choice (class location) and **SSR** verification. Product default: **`showBorder`** follows the same value in **normal and maximized** states; escalate if marketing wants a bordered maximized overlay only.

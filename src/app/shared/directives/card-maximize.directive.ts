@@ -28,6 +28,8 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
 
     readonly showWindowMaximize = input(false);
     readonly showClose = input(false);
+    /** When false, host loses the standard `.card` border (default true preserves existing look). */
+    readonly showBorder = input(true);
     readonly closed = output<void>();
 
     private maximized = false;
@@ -45,7 +47,9 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
         effect(() => {
             const showMax = this.showWindowMaximize();
             const showClose = this.showClose();
+            this.showBorder();
             this.i18n.lang();
+            this.syncShowBorderClass();
             if (this.initialized) {
                 this.syncControls(showMax, showClose);
             }
@@ -68,6 +72,7 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
         this.destroyMaximizeBtn();
         this.destroyCloseBtn();
         this.destroyControlsWrapper();
+        this.renderer.removeClass(this.el.nativeElement, 'card--no-border');
         if (isPlatformBrowser(this.platformId)) {
             this.renderer.removeStyle(this.el.nativeElement, 'position');
         }
@@ -83,6 +88,15 @@ export class CardMaximizeDirective implements OnInit, OnDestroy {
             return;
         }
         this.restore();
+    }
+
+    private syncShowBorderClass(): void {
+        const host = this.el.nativeElement;
+        if (this.showBorder()) {
+            this.renderer.removeClass(host, 'card--no-border');
+        } else {
+            this.renderer.addClass(host, 'card--no-border');
+        }
     }
 
     private syncControls(showMax: boolean, showClose: boolean): void {

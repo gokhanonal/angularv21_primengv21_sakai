@@ -13,13 +13,10 @@ import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
     imports: [CommonModule, TableModule, ButtonModule, RippleModule, CardMaximizeDirective, TranslatePipe],
     template: `<div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
         <div class="card-header">
-            <div class="card-heading">
-                <h3 class="card-title">{{ 'dashboard.chargingUnits.title' | t }}</h3>
-                <p class="card-description">{{ 'dashboard.chargingUnits.description' | t }}</p>
-            </div>
+
             <div class="card-actions">
                 <a href="#" class="card-action-link" (click)="$event.preventDefault()">
-                    {{ 'dashboard.chargingUnits.viewMore' | t }}
+                    {{ 'dashboard.chargingUnits.addNew' | t }}
                     <i class="pi pi-angle-right"></i>
                 </a>
             </div>

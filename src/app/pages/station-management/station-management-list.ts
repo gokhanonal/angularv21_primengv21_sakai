@@ -298,16 +298,16 @@ function escapeHtmlText(value: string): string {
                             <div class="flex flex-wrap gap-2 items-center">
                                 <p-button
                                     type="button"
-                                    [label]="'stationMgmt.refresh' | t"
                                     icon="pi pi-refresh"
                                     [outlined]="true"
+                                    [pTooltip]="refreshTooltip()"
                                     (onClick)="reload()"
                                 />
                                 <p-button
                                     type="button"
-                                    [label]="'stationMgmt.clearFilters' | t"
                                     icon="pi pi-filter-slash"
                                     [outlined]="true"
+                                    [pTooltip]="clearFiltersTooltip()"
                                     (onClick)="clearAllFilters(dt, globalFilterInput)"
                                 />
                                 <p-multiselect
@@ -344,10 +344,10 @@ function escapeHtmlText(value: string): string {
                                     icon="pi pi-undo"
                                     [rounded]="true"
                                     [text]="true"
-                                    [pTooltip]="resetGridTooltip()"
+                                    [pTooltip]="resetGridConfigurationTooltip()"
                                     tooltipPosition="top"
                                     (onClick)="resetGridState(dt, globalFilterInput)"
-                                    [attr.aria-label]="resetGridTooltip()"
+                                    [attr.aria-label]="resetGridConfigurationTooltip()"
                                 />
                                 <p-button
                                     type="button"
@@ -676,9 +676,19 @@ export class StationManagementList implements OnInit {
         return this.i18n.t('stationMgmt.export.download');
     });
 
-    readonly resetGridTooltip = computed(() => {
+    readonly resetGridConfigurationTooltip = computed(() => {
         this.i18n.lang();
-        return this.i18n.t('stationMgmt.resetGrid');
+        return this.i18n.t('stationMgmt.resetGridConfiguration');
+    });
+
+    readonly clearFiltersTooltip = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stationMgmt.clearFilters');
+    });
+
+    readonly refreshTooltip = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('stationMgmt.refreshGridData');
     });
 
     readonly exportMenuItems: MenuItem[] = [

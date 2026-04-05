@@ -6,13 +6,14 @@ import { CardMaximizeDirective } from './card-maximize.directive';
 
 @Component({
     template:
-        '<div class="card" appCardMaximize [showWindowMaximize]="showMax()" [showClose]="showClose()" (closed)="onClosed()">Content</div>',
+        '<div class="card" appCardMaximize [showWindowMaximize]="showMax()" [showClose]="showClose()" [showBorder]="showBorder()" (closed)="onClosed()">Content</div>',
     standalone: true,
     imports: [CardMaximizeDirective]
 })
 class TestHostComponent {
     readonly showMax = signal(true);
     readonly showClose = signal(false);
+    readonly showBorder = signal(true);
     closedCount = 0;
     onClosed(): void {
         this.closedCount++;
@@ -63,6 +64,33 @@ describe('CardMaximizeDirective', () => {
             fixture.destroy();
         }
         removeBackdropsFromBody();
+    });
+
+    it('does not add card--no-border when showBorder is true by default', () => {
+        expect(hostEl().classList.contains('card--no-border')).toBeFalse();
+    });
+
+    it('adds card--no-border when showBorder is false', () => {
+        fixture.componentInstance.showBorder.set(false);
+        detectChangesAndFlush();
+        expect(hostEl().classList.contains('card--no-border')).toBeTrue();
+    });
+
+    it('removes card--no-border when showBorder toggles back to true', () => {
+        fixture.componentInstance.showBorder.set(false);
+        detectChangesAndFlush();
+        fixture.componentInstance.showBorder.set(true);
+        detectChangesAndFlush();
+        expect(hostEl().classList.contains('card--no-border')).toBeFalse();
+    });
+
+    it('keeps card--no-border while maximized when showBorder is false', () => {
+        fixture.componentInstance.showBorder.set(false);
+        detectChangesAndFlush();
+        toggleBtn()!.click();
+        detectChangesAndFlush();
+        expect(hostEl().classList.contains('card--no-border')).toBeTrue();
+        expect(hostEl().classList.contains('card--maximized')).toBeTrue();
     });
 
     it('creates controls wrapper and toggle when showWindowMaximize is true', () => {
