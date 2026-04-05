@@ -1,8 +1,8 @@
 import { Injectable, computed, signal } from '@angular/core';
 import type { ChangePasswordResult, MockUserProfile } from './user-profile.model';
 
-const PROFILE_STORAGE_KEY = 'priland.mockUserProfile.v1';
-const PASSWORD_STORAGE_KEY = 'priland.mockUserPassword.v1';
+const PROFILE_STORAGE_KEY = 'mockUserProfile.v1';
+const PASSWORD_STORAGE_KEY = 'mockUserPassword.v1';
 
 const DEFAULT_PASSWORD = 'DemoPass1';
 

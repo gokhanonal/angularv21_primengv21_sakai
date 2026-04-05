@@ -47,9 +47,19 @@ interface BreadcrumbItem {
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
-                    <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
-                </button>
+                <div class="relative flex shrink-0 items-center justify-center">
+                    <button
+                        type="button"
+                        class="layout-topbar-action"
+                        (click)="themeMenu.toggle($event)"
+                        [attr.aria-label]="themeMenuAria()"
+                        [attr.title]="'topbar.theme' | t"
+                        [attr.aria-haspopup]="'menu'"
+                    >
+                        <i [class]="themeTriggerIconClass()"></i>
+                    </button>
+                    <p-menu #themeMenu [popup]="true" [model]="themeMenuItems()" [appendTo]="'body'" styleClass="layout-topbar-theme-menu" />
+                </div>
                 <div class="relative">  
                     <button
                         class="layout-topbar-action layout-topbar-action-palette"
@@ -163,6 +173,49 @@ export class AppTopbar {
         return this.i18n.t('topbar.profileMenuAria');
     });
 
+    themeMenuAria = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('topbar.theme');
+    });
+
+    themeTriggerIconClass = computed(() => {
+        const mode = this.layoutService.layoutConfig().themeMode;
+        if (mode === 'light') {
+            return 'pi pi-sun';
+        }
+        if (mode === 'dark') {
+            return 'pi pi-moon';
+        }
+        return 'pi pi-desktop';
+    });
+
+    themeMenuItems = computed((): MenuItem[] => {
+        this.i18n.lang();
+        return [
+            {
+                label: this.i18n.t('theme.light'),
+                icon: 'pi pi-sun',
+                command: () => {
+                    this.layoutService.setThemeMode('light');
+                }
+            },
+            {
+                label: this.i18n.t('theme.dark'),
+                icon: 'pi pi-moon',
+                command: () => {
+                    this.layoutService.setThemeMode('dark');
+                }
+            },
+            {
+                label: this.i18n.t('theme.system'),
+                icon: 'pi pi-desktop',
+                command: () => {
+                    this.layoutService.setThemeMode('system');
+                }
+            }
+        ];
+    });
+
     profileMenuItems = computed((): MenuItem[] => {
         this.i18n.lang();
         return [
@@ -229,13 +282,6 @@ export class AppTopbar {
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
             this.updateBreadcrumbs();
         });
-    }
-
-    toggleDarkMode() {
-        this.layoutService.layoutConfig.update((state) => ({
-            ...state,
-            darkTheme: !state.darkTheme
-        }));
     }
 
     private updateBreadcrumbs(): void {

@@ -31,6 +31,10 @@ const en: TranslationTable = {
     'topbar.profileMenu.profile': 'Profile',
     'topbar.profileMenu.changePassword': 'Change password',
     'topbar.profileMenu.logout': 'Log out',
+    'topbar.theme': 'Appearance',
+    'theme.light': 'Light',
+    'theme.dark': 'Dark',
+    'theme.system': 'System',
 
     'sidebar.searchPlaceholder': 'Search menu items...',
     'sidebar.searchAria': 'Search menu items',
@@ -339,6 +343,10 @@ const tr: TranslationTable = {
     'topbar.profileMenu.profile': 'Profil',
     'topbar.profileMenu.changePassword': 'Şifre değiştir',
     'topbar.profileMenu.logout': 'Çıkış yap',
+    'topbar.theme': 'Görünüm',
+    'theme.light': 'Açık',
+    'theme.dark': 'Koyu',
+    'theme.system': 'Sistem',
 
     'sidebar.searchPlaceholder': 'Menüde ara...',
     'sidebar.searchAria': 'Menüde ara',
@@ -619,6 +627,10 @@ const fr: TranslationTable = {
     'topbar.profileMenu.profile': 'Profil',
     'topbar.profileMenu.changePassword': 'Changer le mot de passe',
     'topbar.profileMenu.logout': 'Se déconnecter',
+    'topbar.theme': 'Apparence',
+    'theme.light': 'Clair',
+    'theme.dark': 'Sombre',
+    'theme.system': 'Système',
 
     'sidebar.searchPlaceholder': 'Rechercher dans le menu...',
     'sidebar.searchAria': 'Rechercher dans le menu',
@@ -883,6 +895,10 @@ const de: TranslationTable = {
     'topbar.profileMenu.profile': 'Profil',
     'topbar.profileMenu.changePassword': 'Passwort ändern',
     'topbar.profileMenu.logout': 'Abmelden',
+    'topbar.theme': 'Darstellung',
+    'theme.light': 'Hell',
+    'theme.dark': 'Dunkel',
+    'theme.system': 'System',
 
     'sidebar.searchPlaceholder': 'Menü durchsuchen...',
     'sidebar.searchAria': 'Menü durchsuchen',

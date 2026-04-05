@@ -1410,3 +1410,226 @@ Refactor `chargingunitwidget.ts` from **table** to **card** view (one card per r
 ### 12. Handoff
 
 All questions resolved. **Per unit** cards from `charging_unit.json`. `hoStatus` as `p-tag`. Dates via `DatePipe` with time. Booleans as icons. Edit/Delete/Config buttons kept. Connectors not needed for v1.
+
+## Add System to Dark and Light Theme mode (follow OS `prefers-color-scheme`)
+
+### Source intent
+
+> Add System to Dark and Light Theme mode which will operate dark or light time according to System preference.
+
+### Summary
+
+**Problem:** Theme is a boolean (light/dark) with a single toggle; users who want the app to **track the OS/browser** light/dark preference cannot do so without manual toggling.
+
+**Proposed outcome:** Introduce a **third persisted mode** `'system'` that sets **effective** appearance from `window.matchMedia('(prefers-color-scheme: dark)')`, updates when the OS preference changes while the app is open, and exposes a **dropdown** with three explicit options (light / dark / system), **PrimeIcons** on the trigger (`pi-sun` / `pi-moon` / `pi-desktop`), full i18n, and **cross-tab sync** via the `storage` event.
+
+**Key assumptions (locked):**
+
+- **A1:** “System” means **CSS media query** `prefers-color-scheme` (not time-of-day scheduling).
+- **A2:** PrimeNG continues to use **`app-dark` on `<html>`** for dark styling; effective dark = class present; effective light = class absent.
+- **A3:** Existing installs with `branding.theme` only `'light' | 'dark'` continue to work; **new users / missing `theme`** default to **`system`** (not light).
+
+---
+
+### How the three-way mode works
+
+| Stored mode (`themeMode` or equivalent) | Effective appearance | Who drives `app-dark` |
+|----------------------------------------|----------------------|------------------------|
+| `'light'` | Always light | Never add `app-dark` (or remove on apply). |
+| `'dark'` | Always dark | Always add `app-dark`. |
+| `'system'` | Matches OS | Add/remove `app-dark` from **`matchMedia('(prefers-color-scheme: dark)')`** `.matches`; re-apply when media query **changes** (`change` event). |
+
+**Separation of concerns (recommended model):**
+
+- **User choice:** `'light' | 'dark' | 'system'` (persisted).
+- **Effective dark flag:** derived boolean used only for DOM/PrimeNG (`isEffectiveDark` or internal apply method), **not** the same as “user picked dark” when mode is system.
+
+---
+
+### Product decisions (resolved)
+
+| Topic | Decision |
+|--------|----------|
+| **Topbar control** | **Dropdown** with three explicit items: **Light**, **Dark**, **System** (not a single-button cycle). |
+| **Floating configurator** | **Same dropdown UX** and same `themeMode` as topbar. |
+| **Initial default for new users** | **`system`** when there is no prior persisted `theme` (or first visit before `branding` is written). |
+| **Cycle order (reference only)** | If any future control cycles, order is **light → dark → system → light**; **current UX is dropdown only**. |
+| **Trigger icons** | **`pi-sun`** (light), **`pi-moon`** (dark), **`pi-desktop`** (system) — icon reflects **selected mode**, not effective sun/moon when mode is system. |
+| **Cross-tab sync** | **Yes:** `window` **`storage`** listener; when `localStorage` `branding` (or the key used for theme) changes in **another** tab, update in-app state and DOM (**note:** `storage` does not fire in the tab that wrote the value). |
+| **SSR / non-browser** | If `matchMedia` unavailable, **fallback** to **light** effective appearance (documented). |
+| **View Transitions** | Keep `handleDarkModeTransition` for **effective** theme changes (including system-driven flips). |
+
+---
+
+### Functional requirements
+
+1. **FR-1 — Three persisted theme modes**  
+   User can select **light**, **dark**, or **system**; choice is reflected in UI and persisted.
+
+2. **FR-2 — System mode tracks OS**  
+   When mode is **system**, effective theme follows `(prefers-color-scheme: dark)` and updates **without reload** when OS preference changes.
+
+3. **FR-3 — DOM / PrimeNG alignment**  
+   Effective dark/light continues to drive **`app-dark`** on `document.documentElement` consistent with `darkModeSelector: '.app-dark'`.
+
+4. **FR-4 — Topbar and configurator**  
+   Both entry points implement the same mode model (no divergent booleans-only toggles).
+
+5. **FR-5 — Iconography**  
+   Dropdown trigger shows **`pi-sun`** when mode is light, **`pi-moon`** when dark, **`pi-desktop`** when system (always **selected mode**, never effective-only sun/moon while in system).
+
+6. **FR-6 — Accessibility**  
+   Dropdown trigger has **translated** label/tooltip/aria (e.g. “Theme” / “Appearance”); each menu item uses **translated** **Light**, **Dark**, **System** labels; keyboard operable per PrimeNG overlay/menu patterns.
+
+7. **FR-7 — Persistence**  
+   `localStorage` `branding.theme` stores **`'light' | 'dark' | 'system'`**; read on startup restores mode; **`matchMedia` listener** when mode is **system**.
+
+8. **FR-8 — Defaults and migration**  
+   Legacy values `'light'` and `'dark'` load unchanged. **Missing** or **invalid** `theme` defaults to **`system`**. After user save, persisted `theme` is always **`'light' | 'dark' | 'system'`**.
+
+9. **FR-9 — Cross-tab sync**  
+   Register a **`storage`** listener (same origin); on relevant key change from **another** tab, parse `theme`, update `LayoutService` state, re-apply DOM and attach/detach `matchMedia` listener as needed **without** causing redundant writes that fight the originating tab.
+
+---
+
+### Non-functional requirements
+
+- **NFR-1 — Performance:** `matchMedia` listener registered **at most one** active subscription when `themeMode === 'system'`; avoid duplicate listeners on navigation if service is singleton.
+- **NFR-2 — No theme flash:** On cold start, apply stored mode + effective class **as early as practical** (existing branding load path) to minimize wrong-theme flash before system resolves.
+- **NFR-3 — Memory / lifecycle:** When user switches from **system** to fixed light/dark, **remove** `matchMedia` `change` listener (or no-op handler) to avoid leaks (`DestroyRef` / `ngOnDestroy` as appropriate).
+- **NFR-4 — Storage listener:** Single `storage` listener for the app lifetime (or service lifetime); handler must be **idempotent** and avoid infinite write loops when updating from remote tab events.
+
+---
+
+### Impact on types and services
+
+| Area | Change |
+|------|--------|
+| **`BrandingSettings.theme`** | Extend to **`'light' \| 'dark' \| 'system'`** (source of truth for persisted user choice). |
+| **`LayoutConfig`** | Replace or supplement `darkTheme: boolean` with **`themeMode: 'light' \| 'dark' \| 'system'`** *or* keep `darkTheme` as **effective** boolean **plus** `themeMode` for user choice — **recommend:** `themeMode` for choice + **`effectiveDark` computed** (or single `themeMode` + computed `isEffectiveDark`) to avoid dual sources of truth. |
+| **`LayoutService`** | Load/save `themeMode` (default **`system`**); compute **effective** dark; **`setThemeMode(mode)`** (or equivalent) called by dropdown; **`applyThemeToDocument()`** on init, mode change, `matchMedia` `change`, and **`storage`** events from other tabs; **`matchMedia` + `storage`** listener lifecycle centralized here. |
+| **`app.config.ts`** | No change required if selector stays `.app-dark` (verify). |
+| **Topbar / Floating configurator** | **PrimeNG dropdown or tiered menu** with three options; trigger icon **`pi-sun` / `pi-moon` / `pi-desktop`**; bind selection to **`LayoutService.themeMode`**. |
+
+---
+
+### Theme control UX (chosen)
+
+- **Control:** **Dropdown** (e.g. `p-select`, `p-tieredMenu`, or `p-overlay` + menu — match existing PrimeNG patterns in topbar/configurator).
+- **Items:** Three explicit options — **Light**, **Dark**, **System** (all i18n).
+- **Trigger:** Icon per **FR-5** (`pi-sun` / `pi-moon` / `pi-desktop`); optional chevron per layout consistency.
+- **Reference cycle order** (not used in UI): light → dark → system → light — documented only for consistency if a shortcut is added later.
+
+---
+
+### System mode listener lifecycle
+
+1. **On app init:** After reading `branding`, set `themeMode`; if `'system'`, read `matchMedia`, set effective class, **`addEventListener('change', handler)`**.
+2. **On user switch to system:** Attach listener (if not attached), compute from `matchMedia`, apply class.
+3. **On user switch to light/dark:** Update stored mode, apply class **directly**, **remove** listener or guard handler so system events are ignored.
+4. **On service destroy (if applicable):** Remove `matchMedia` listener (defensive; often singleton lives app lifetime).
+
+5. **Cross-tab (`storage`):** On `storage` event for the **branding** key (or theme slice), if `newValue` differs from current parsed state, **update `themeMode`** and call the same apply path as local user selection (including registering/removing `matchMedia` listener). **Do not** re-`setItem` identical JSON in the receiving tab if that would churn; merge state only when parsed `theme` actually changed.
+
+Use **`matchMedia(...).addEventListener('change', ...)`** (or `addListener` for very old browsers if project still targets them — unlikely for Angular 21).
+
+---
+
+### Persistence and migration
+
+- **Read path:** `theme: 'light' | 'dark'` → unchanged behavior for those users.
+- **Missing `theme` / first visit:** Default to **`system`** before first persist (product: new users see system-following behavior).
+- **New explicit value:** `'system'` when user selects System from dropdown.
+- **Invalid JSON / unknown `theme` string:** Fallback to **`system`** (aligned with new-user default).
+- Avoid breaking existing `branding` shape beyond extending `theme` union; **cross-tab** updates rely on full key write (typical `branding` JSON) — implementation should parse safely on `storage`.
+
+---
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected |
+|----------|----------|
+| **OS switches dark↔light while app open, mode = system** | UI updates within one event turn; View Transition if enabled. |
+| **User on system, then OS has no “dark” (always light)** | Effective stays light; no error. |
+| **`matchMedia` undefined (SSR, tests, old embed)** | Fixed fallback; no throw; tests may inject mock. |
+| **localStorage quota / private mode** | Same as today: catch write failures; in-memory still works session. |
+| **Two tabs same origin** | **Required:** other tab(s) update theme via **`storage`** when `localStorage` branding changes; originating tab relies on in-app state (no `storage` event locally). |
+| **Icon in system mode while OS is dark** | Trigger stays **`pi-desktop`** (selected mode), not `pi-moon`. |
+| **Floating configurator + topbar** | Both reflect same `themeMode` (single service state). |
+| **PrimeNG dynamic theme** | Verify no regression when class toggles from media listener. |
+
+---
+
+### i18n
+
+Add keys in **`translations.ts`** (en, tr, fr, de) for:
+
+- **Dropdown / trigger:** e.g. `topbar.theme` or `layout.theme` — short label for aria/tooltip (“Theme”, “Appearance”).
+- **Menu items:** **`theme.light`**, **`theme.dark`**, **`theme.system`** (or nested under same namespace) — strings for **Light**, **Dark**, **System**.
+- **Optional helper** for system row: short subtitle “Follow device settings” / “Uses system appearance” if UX uses subtitles in menu items.
+
+Reuse existing topbar translation patterns and key naming conventions in `translations.ts`.
+
+---
+
+### Acceptance criteria (testable)
+
+- [ ] User can set theme to **light**, **dark**, and **system** from **topbar** via **dropdown** with three labeled options (i18n).
+- [ ] **New profile / missing `theme`:** app behaves as **`system`** (effective follows OS) until user changes and persists.
+- [ ] Choice persists across **full page reload**; invalid/missing `theme` after parse errors defaults to **`system`**.
+- [ ] With **system** selected, toggling OS appearance (or DevTools emulation) updates app **without** manual toggle.
+- [ ] With **light** or **dark** selected, changing OS appearance **does not** change app theme.
+- [ ] **`app-dark`** on `<html>` matches **effective** dark state in all modes.
+- [ ] **Floating configurator** uses the same **dropdown** model and stays in sync with topbar and `localStorage`.
+- [ ] **Cross-tab:** change theme in tab A → tab B updates **without** reload (manual smoke with two windows).
+- [ ] Legacy `branding` with only `light`/`dark` still loads correctly.
+- [ ] No duplicate **`matchMedia`** listeners after repeated mode switches (manual or unit test).
+- [ ] Trigger icons: **`pi-sun`**, **`pi-moon`**, **`pi-desktop`** per selected mode (**system** shows desktop even when OS is dark).
+- [ ] `ng build` green; **manual** smoke: dropdown selections, reload, system + OS toggle, two-tab sync.
+
+---
+
+### Implementation breakdown (for engineering)
+
+- [ ] Extend **`BrandingSettings.theme`** union to **`'light' | 'dark' | 'system'`**; **`LayoutService`**: default **`system`** when absent/invalid; persist on user change.
+- [ ] Refactor **`LayoutConfig`**: `themeMode` + computed **`isEffectiveDark`** (or equivalent); map/remove legacy `darkTheme` boolean carefully.
+- [ ] **`matchMedia('(prefers-color-scheme: dark)')`**: listener only while `themeMode === 'system'`; **`applyThemeToDocument()`** on effective change + View Transitions hook.
+- [ ] **`window.addEventListener('storage', ...)`**: sync `themeMode` from other tabs when branding key updates; avoid write loops.
+- [ ] **`app.topbar.ts`**: replace boolean toggle with **dropdown** + **`pi-sun` / `pi-moon` / `pi-desktop`** + i18n keys for trigger + three items.
+- [ ] **`app.floatingconfigurator.ts`**: same dropdown + same service API.
+- [ ] **`translations.ts`**: en/tr/fr/de for theme trigger + **light**, **dark**, **system** labels (and optional system subtitle).
+- [ ] **Unit tests** (Angular): persistence defaults (**`system`**), parse of legacy values, listener registration/cleanup where feasible.
+- [ ] **Manual:** DevTools `prefers-color-scheme` emulation; **two tabs** theme sync.
+
+---
+
+### Open questions — **all resolved** (stakeholder decisions)
+
+| # | Topic | Resolution |
+|---|--------|------------|
+| 1 | Default for new users | **`system`** |
+| 2 | Cycle order | **Accepted** as reference order (light → dark → system → light); **UI is dropdown**, not a cycle button |
+| 3 | Icon in system mode | **`pi-desktop`** always for system (not effective sun/moon) |
+| 4 | Cross-tab sync | **Yes** — `storage` event listener |
+| 5 | UX control | **Dropdown** with three explicit options in **topbar** and **floating configurator** |
+
+---
+
+### Out of scope (unless product expands)
+
+- **Scheduled** light/dark by **time of day** (separate from `prefers-color-scheme`).
+- Per-user server-side theme preference (still localStorage-only unless backend added).
+- Changing PrimeNG preset or `darkModeSelector` strategy beyond `.app-dark`.
+- WCAG contrast audit of both themes (unless requested).
+
+---
+
+### Handoff — **ready for implementation**
+
+All open questions are **resolved**. Implement:
+
+- Persisted **`theme`**: `'light' | 'dark' | 'system'` with **default `system`** for new/missing/invalid.
+- **`LayoutService`**: `setThemeMode`, effective dark, **`matchMedia`** lifecycle, **`storage`** cross-tab sync, **`applyThemeToDocument`** + existing transitions.
+- **Topbar + floating configurator**: **dropdown** (three i18n options), trigger icons **`pi-sun` / `pi-moon` / `pi-desktop`**.
+- **i18n** in en/tr/fr/de for dropdown labels.
+- Verify **acceptance criteria** (including **two-tab** `storage` sync and DevTools OS theme emulation).
