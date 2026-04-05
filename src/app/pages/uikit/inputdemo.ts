@@ -30,7 +30,7 @@ import { CountryService } from '@/app/pages/service/country.service';
 import { NodeService } from '@/app/pages/service/node.service';
 import { TreeNode } from 'primeng/api';
 import { Country } from '@/app/pages/service/customer.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-input-demo',

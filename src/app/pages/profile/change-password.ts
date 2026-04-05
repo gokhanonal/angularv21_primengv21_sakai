@@ -11,7 +11,7 @@ import { ValidationRule } from '@/app/shared/validated-input/validated-input.con
 import { validate } from '@/app/shared/validated-input/validators';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-change-password',

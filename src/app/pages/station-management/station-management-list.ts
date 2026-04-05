@@ -1,9 +1,10 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import {
     Component,
     DestroyRef,
     Injector,
     OnInit,
+    PLATFORM_ID,
     Renderer2,
     ViewChild,
     afterNextRender,
@@ -57,10 +58,13 @@ import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
 import { GridState } from '@/app/core/grid/grid-state.model';
 import { GridStateService } from '@/app/core/grid/grid-state.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 const STATION_MGMT_GRID_PAGE = 'station-management';
 const STATION_MGMT_GRID_NAME = 'main';
+
+/** Viewport breakpoint: frozen columns enabled at or above this width (FR-1a — matchMedia). */
+const STATION_MGMT_DESKTOP_FROZEN_MEDIA = '(min-width: 768px)';
 
 /** Non-frozen data columns only (selection, station code, name, actions stay always visible). */
 const STATION_MGMT_DATA_COLUMN_OPTIONS: readonly { key: string; labelKey: string }[] = [
@@ -367,6 +371,8 @@ function escapeHtmlText(value: string): string {
                         <tr>
                             <th
                                 pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
                                 alignFrozen="left"
                                 style="width: 3rem; min-width: 3rem"
                                 class="text-center"
@@ -374,7 +380,14 @@ function escapeHtmlText(value: string): string {
                             >
                                 <p-tableHeaderCheckbox [ariaLabel]="'stationMgmt.selection.selectAll' | t" />
                             </th>
-                            <th pSortableColumn="stationInfoId" pFrozenColumn alignFrozen="left" style="min-width: 9rem">
+                            <th
+                                pSortableColumn="stationInfoId"
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="left"
+                                style="min-width: 9rem"
+                            >
                                 <div class="flex justify-between items-center gap-2 flex-wrap">
                                     <span class="inline-flex items-center gap-1"
                                         >{{ 'stationMgmt.col.stationCode' | t }} <p-sortIcon field="stationInfoId" /></span
@@ -388,7 +401,14 @@ function escapeHtmlText(value: string): string {
                                     />
                                 </div>
                             </th>
-                            <th pSortableColumn="name" pFrozenColumn alignFrozen="left" style="min-width: 14rem">
+                            <th
+                                pSortableColumn="name"
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="left"
+                                style="min-width: 14rem"
+                            >
                                 <div class="flex justify-between items-center gap-2 flex-wrap">
                                     <span class="inline-flex items-center gap-1">{{ 'stationMgmt.col.name' | t }} <p-sortIcon field="name" /></span>
                                     <p-columnFilter
@@ -472,18 +492,49 @@ function escapeHtmlText(value: string): string {
                                     </div>
                                 </th>
                             }
-                            <th pFrozenColumn alignFrozen="right" style="min-width: 13rem" class="text-end" scope="col">
+                            <th
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="right"
+                                style="min-width: 13rem"
+                                class="text-end"
+                                scope="col"
+                            >
                                 {{ 'stationMgmt.col.actions' | t }}
                             </th>
                         </tr>
                     </ng-template>
                     <ng-template #body let-row let-columns="columns">
                         <tr>
-                            <td pFrozenColumn alignFrozen="left" class="text-center" style="width: 3rem">
+                            <td
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="left"
+                                class="text-center"
+                                style="width: 3rem"
+                            >
                                 <p-tableCheckbox [value]="row" [ariaLabel]="rowSelectAriaLabel(row)" />
                             </td>
-                            <td pFrozenColumn alignFrozen="left" class="font-mono text-sm">{{ row.stationInfoId }}</td>
-                            <td pFrozenColumn alignFrozen="left" class="font-medium">{{ row.name }}</td>
+                            <td
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="left"
+                                class="font-mono text-sm"
+                            >
+                                {{ row.stationInfoId }}
+                            </td>
+                            <td
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="left"
+                                class="font-medium"
+                            >
+                                {{ row.name }}
+                            </td>
                             @for (col of columns; track col.field) {
                                 <td>
                                     @switch (col.field) {
@@ -514,7 +565,13 @@ function escapeHtmlText(value: string): string {
                                     }
                                 </td>
                             }
-                            <td pFrozenColumn alignFrozen="right" class="text-end whitespace-nowrap">
+                            <td
+                                pFrozenColumn
+                                [frozen]="isDesktop()"
+                                [ngStyle]="frozenColumnInlineReset()"
+                                alignFrozen="right"
+                                class="text-end whitespace-nowrap"
+                            >
                                 <p-button
                                     type="button"
                                     [text]="true"
@@ -590,8 +647,20 @@ export class StationManagementList implements OnInit {
     private readonly renderer = inject(Renderer2);
     private readonly gridState = inject(GridStateService);
     private readonly measureCellText = createCanvasTextMeasureFn();
+    private readonly platformId = inject(PLATFORM_ID);
 
     readonly loading = signal(true);
+
+    /**
+     * Desktop (≥768px viewport): frozen prefix + actions column. Narrower: all columns scroll together.
+     * SSR / first paint: true until browser matchMedia runs (desktop-first).
+     */
+    readonly isDesktop = signal(true);
+
+    /** Clears inline left/right from PrimeNG when unfrozen so resize transitions do not leave stale sticky offsets. */
+    readonly frozenColumnInlineReset = computed(() =>
+        this.isDesktop() ? {} : { left: 'auto', right: 'auto' }
+    );
 
     /** Matches `[rows]` on `p-table` (samples first page for auto column widths). */
     readonly tableRowsPerPage = 10;
@@ -716,9 +785,29 @@ export class StationManagementList implements OnInit {
     }
 
     ngOnInit(): void {
+        this.registerDesktopFrozenBreakpointListener();
         this.restoreGridState();
         this.rebuildScrollableColumns();
         this.reload();
+    }
+
+    /** Subscribes to viewport width vs 768px; cleans up on destroy. No-op on server (SSR). */
+    private registerDesktopFrozenBreakpointListener(): void {
+        if (!isPlatformBrowser(this.platformId)) {
+            return;
+        }
+        const mq = window.matchMedia(STATION_MGMT_DESKTOP_FROZEN_MEDIA);
+        const onChange = (): void => {
+            const next = mq.matches;
+            if (this.isDesktop() === next) {
+                return;
+            }
+            this.isDesktop.set(next);
+            this.scheduleApplyScrollableColumnAutoWidths();
+        };
+        this.isDesktop.set(mq.matches);
+        mq.addEventListener('change', onChange);
+        this.destroyRef.onDestroy(() => mq.removeEventListener('change', onChange));
     }
 
     reload(): void {

@@ -19,7 +19,7 @@ import { TagModule } from 'primeng/tag';
 import { Customer, CustomerService, Representative } from '@/app/pages/service/customer.service';
 import { Product, ProductService } from '@/app/pages/service/product.service';
 import { ObjectUtils} from "primeng/utils";
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 interface expandedRows {
     [key: string]: boolean;

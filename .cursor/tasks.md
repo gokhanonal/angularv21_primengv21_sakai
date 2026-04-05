@@ -1185,3 +1185,76 @@ Extend **`CardMaximizeDirective`** (`[appCardMaximize]` on `<div class="card">`)
 ### Handoff
 
 Requirements are **ready for implementation**. Engineering owns **specificity** choice (class location) and **SSR** verification. Product default: **`showBorder`** follows the same value in **normal and maximized** states; escalate if marketing wants a bordered maximized overlay only.
+
+## when width of grid is small (for eg. in mobile view etc.) make frozenColumns to standart columns
+
+### Summary
+
+**Problem:** On narrow viewports, Station Management’s `p-table` uses **four frozen columns** (three left: selection, station code, name; one right: actions). Their combined minimum footprint (~26rem left + ~13rem right before scrollable data) can **exceed viewport width**, hiding scrollable data columns or making horizontal navigation unusable.
+
+**Outcome:** Below an agreed **viewport / container width threshold**, **disable PrimeNG frozen behavior** so **all columns participate in the same horizontal scroll** as normal (non-frozen) columns. Above the threshold, preserve current desktop behavior (frozen prefix + suffix).
+
+**Key assumptions (validate with product):**
+- Column **order and count** in the template stay the same; only `pFrozenColumn` (and related frozen styling) toggles.
+- **Autosize / DOM index math** in `station-management-column-autosize.ts` uses `STATION_MGMT_FROZEN_LEFT_TH_COUNT` as the **offset to the first “scrollable data” `<th>`** (after checkbox + code + name). That offset stays **3** as long as those three leading columns remain; **renaming or documenting** is recommended to avoid confusing “frozen count” with “prefix column count.”
+- **Grid state** persists widths keyed by **data column field**; mapping uses the same prefix offset, so **no cross-mode index corruption** is expected if column structure is unchanged.
+
+### Resolved questions
+
+1. **Breakpoint:** **768px viewport width** — use `matchMedia('(min-width: 768px)')` for clean reactivity. Aligns with common tablet breakpoint.
+2. **Scope:** **All four** frozen columns (selection, station code, name, actions) become standard below the breakpoint.
+3. **Mobile UX:** Accept horizontal scroll for selection and actions on small screens — separate mobile pattern is out of scope.
+4. **SSR / first paint:** Default to frozen (desktop-first); client toggles after hydration if narrow.
+5. **Zoom:** Ignore for this task.
+
+### Functional requirements
+
+- **FR-1 — Thresholded behavior:** When **observed width ≥ breakpoint** (defined in FR-1a), **left** selection, station code, name and **right** actions behave as today (**`pFrozenColumn`** applied). When **width < breakpoint**, **none** of those cells use frozen column behavior; horizontal scroll includes them with the rest of the row.
+- **FR-1a — Measurement source:** Document whether width is **`window.innerWidth`**, **`matchMedia`**, **`ResizeObserver` on table host**, or **layout service** — must be **consistent** and **testable**.
+- **FR-2 — No duplicate rows / columns:** Toggling frozen shall **not** duplicate `<tr>`/`<td>` content (prefer **single template** with conditional directive application per engineering pattern).
+- **FR-3 — Scrollable table:** Existing **`[scrollable]="true"`** and **`scrollHeight`** remain; user can scroll **all** columns horizontally in compact mode.
+- **FR-4 — Feature parity:** Sorting, filtering, selection, row actions, column chooser, global search, and **Clear filter clears search** (per project rule) remain **unchanged** in behavior.
+- **FR-5 — Autosize compatibility:** First-load / refresh **column width estimation** and **`readScrollableHeaderDomWidthsPx` / `applyScrollableColumnWidthsToTable`** continue to target the correct **data** columns. If prefix column count ever diverges from **3**, **single source of truth** for that offset must update (constant or dynamic).
+- **FR-6 — Grid state persistence:** **Sort**, **visible columns**, **column order**, and **stored data-column widths** (field-keyed) remain valid across **breakpoint transitions** (desktop ↔ mobile) without applying widths to the wrong field. If a transition causes **layout thrash**, **re-run autosize** or **re-apply stored widths** after render (engineering detail).
+- **FR-7 — Live resize / orientation:** User resizing the window or rotating device shall **update** frozen vs non-frozen within a **reasonable** delay (no stuck state until full reload).
+
+### Non-functional requirements
+
+- **NFR-1 — Performance:** Breakpoint evaluation must avoid **excessive** layout reads (prefer `ResizeObserver` / throttled `matchMedia` as appropriate).
+- **NFR-2 — Accessibility:** In compact mode, **keyboard / screen reader** users can still reach **actions** and **selection** via **horizontal scroll** or **focus order** (verify with PrimeNG scroll container).
+- **NFR-3 — Consistency:** Breakpoint aligns with **other responsive grids** in the product if any exist.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected behavior |
+|----------|-------------------|
+| Width hovers around breakpoint | **Hysteresis** optional to avoid flicker; otherwise **stable** rule at exact boundary (product picks). |
+| Desktop → mobile while grid state saves | **No** wrong column widths; **sort/visibility** preserved. |
+| Mobile → desktop | Frozen columns **restore**; **no** permanent loss of state. |
+| Empty / loading / error rows | **Same** rules; no freeze on narrow viewports. |
+| User zoom / large font | If layout breaks, consider **container-based** breakpoint vs viewport-only. |
+| `STATION_MGMT_FROZEN_LEFT_TH_COUNT` | If renamed, **update** spec/tests; value stays **3** unless template prefix columns change. |
+
+### Acceptance criteria
+
+- [x] Below agreed breakpoint: **no** `pFrozenColumn` behavior on selection, station code, name, or actions; **single** horizontal scroll area for the row.
+- [x] At or above breakpoint: **current** frozen left + right behavior **restored** (visual / UX parity with pre-change desktop).
+- [x] **Autosize** still applies widths to **correct** data columns after load and after language/data refresh on **both** sides of breakpoint.
+- [x] **Grid state** (sort, columns, widths) **survives** resize across breakpoint without misaligned columns.
+- [x] **No regression** on sort, filter, selection, actions, column visibility dialog, CSV/export if present.
+- [x] **`ng test` / `ng build`** green; **manual** check: narrow phone width + wide desktop + rotate.
+
+### Out of scope (unless product expands)
+
+- **Different column sets** on mobile (hiding code/name columns).
+- **Sticky** non-PrimeNG CSS replacement for subset of columns.
+- **Redesign** of row actions into a **single overflow menu** on mobile.
+- Changing **`scrollHeight`** or **pagination** solely for this task.
+
+### Handoff
+
+**Product** must confirm **breakpoint** and **measurement source** (viewport vs container). **Engineering** implements conditional `pFrozenColumn` (e.g. `@if` duplicate headers/cells, host directive, or supported PrimeNG/API pattern), wires **resize/orientation**, validates **autosize** + **grid state** on toggle, and **documents** whether `STATION_MGMT_FROZEN_LEFT_TH_COUNT` is **semantic “left prefix `<th>` count”** vs literal frozen count for future maintainers.
+
+### Implementation notes (for backlog — not BA code)
+
+- Target: `station-management-list.ts` (`pFrozenColumn` on `<th>` / `<td>`), coordinated with `station-management-column-autosize.ts` and tests in `station-management-column-autosize.spec.ts`.

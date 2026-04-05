@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
-import { CardMaximizeDirective } from './card-maximize.directive';
+import { CardMaximizeDirective } from './card.directive';
 
 @Component({
     template:

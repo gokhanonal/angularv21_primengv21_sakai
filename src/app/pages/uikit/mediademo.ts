@@ -7,7 +7,7 @@ import { ImageModule } from 'primeng/image';
 import { TagModule } from 'primeng/tag';
 import { PhotoService } from '@/app/pages/service/photo.service';
 import { Product, ProductService } from '@/app/pages/service/product.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-media-demo',

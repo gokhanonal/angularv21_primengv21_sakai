@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { TextareaModule } from 'primeng/textarea';
 import { ValidatedInputComponent } from '@/app/shared/validated-input/validated-input.component';
 import { ValidationRule } from '@/app/shared/validated-input/validated-input.contract';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-formlayout-demo',

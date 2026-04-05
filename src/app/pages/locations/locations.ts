@@ -10,7 +10,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
 import * as L from 'leaflet';
 import { MOCK_LOCATIONS, STATUS_COLORS, SiteLocation } from './location.data';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-locations',

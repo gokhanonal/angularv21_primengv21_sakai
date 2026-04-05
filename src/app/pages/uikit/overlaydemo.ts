@@ -11,7 +11,7 @@ import {FormsModule} from '@angular/forms';
 import {TooltipModule} from 'primeng/tooltip';
 import {TableModule} from 'primeng/table';
 import {Product, ProductService} from '@/app/pages/service/product.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-overlay-demo',

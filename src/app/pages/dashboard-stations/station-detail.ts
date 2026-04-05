@@ -8,7 +8,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { MessageModule } from 'primeng/message';
 import { DashboardMapItemSummary } from './stations.model';
 import { StationsService } from './stations.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 function parseLocationIdParam(raw: string | null): number {
     if (raw == null) {

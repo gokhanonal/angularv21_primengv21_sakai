@@ -3,7 +3,7 @@ import {TimelineModule} from 'primeng/timeline';
 import {CardModule} from 'primeng/card';
 import {CommonModule} from '@angular/common';
 import {ButtonModule} from 'primeng/button';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-timeline-demo',

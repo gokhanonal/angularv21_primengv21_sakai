@@ -545,7 +545,7 @@ const tr: TranslationTable = {
     'dashboard.chargingUnits.title': 'Şarj üniteleri',
     'dashboard.chargingUnits.description': 'Şarj ünitesi cihazlarına genel bakış',
     'dashboard.chargingUnits.viewMore': 'Daha Fazla',
-    'dashboard.chargingUnits.addNew': 'Yeni Ekle',
+    'dashboard.chargingUnits.addNew': 'Ekle',
     'dashboard.chargingUnits.labelStatus': 'Durum',
     'dashboard.chargingUnits.labelBrand': 'Marka',
     'dashboard.chargingUnits.labelModel': 'Model',

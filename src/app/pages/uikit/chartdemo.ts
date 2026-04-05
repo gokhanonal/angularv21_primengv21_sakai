@@ -2,7 +2,7 @@ import {Component, effect, inject, signal} from '@angular/core';
 import {ChartModule} from 'primeng/chart';
 import {FluidModule} from 'primeng/fluid';
 import {LayoutService} from '@/app/layout/service/layout.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 @Component({
     selector: 'app-chart-demo',

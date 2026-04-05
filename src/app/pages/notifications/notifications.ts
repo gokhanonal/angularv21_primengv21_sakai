@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NotificationService } from '@/app/layout/service/notification.service';
 import { NotificationItem, NotificationType } from '@/app/layout/service/notification.contract';
 import { NotificationDetail } from './notification-detail';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 type ReadFilter = 'all' | 'unread' | 'read';
 

@@ -4,7 +4,7 @@ import { RippleModule } from 'primeng/ripple';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 
 @Component({
@@ -16,8 +16,8 @@ import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
 
             <div class="card-actions">
                 <a href="#" class="card-action-link" (click)="$event.preventDefault()">
+                <i class="pi pi-plus"></i>
                     {{ 'dashboard.chargingUnits.addNew' | t }}
-                    <i class="pi pi-angle-right"></i>
                 </a>
             </div>
         </div>

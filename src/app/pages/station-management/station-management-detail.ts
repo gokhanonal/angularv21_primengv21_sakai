@@ -25,7 +25,7 @@ import { I18nService } from '@/app/core/i18n/i18n.service';
 import { stationManagementCompanyLogoSrc } from './station-management-logo';
 import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { AvatarEditorDialogComponent } from '@/app/shared/image-editor/avatar-editor-dialog.component';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
 import { ChargingUnitWidget } from '@/app/pages/dashboard/components/chargingunitwidget';

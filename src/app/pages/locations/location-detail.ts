@@ -5,7 +5,7 @@ import { map } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
 import { STATUS_COLORS, getLocationById } from './location.data';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 function parseLocationIdParam(raw: string | null): number {
     if (raw == null) {

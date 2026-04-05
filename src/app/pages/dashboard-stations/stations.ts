@@ -17,7 +17,7 @@ import { StationRow } from './stations.model';
 import { StationsService } from './stations.service';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
-import { CardMaximizeDirective } from '@/app/shared/directives/card-maximize.directive';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 const MARKER_ICON_SIZE: L.PointExpression = [32, 32];
 const MARKER_ICON_ANCHOR: L.PointExpression = [16, 32];
