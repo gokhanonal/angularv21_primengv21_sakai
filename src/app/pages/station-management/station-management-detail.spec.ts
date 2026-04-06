@@ -67,7 +67,15 @@ describe('StationManagementDetail', () => {
         })
             .overrideComponent(StationManagementDetail, {
                 set: {
-                    providers: [{ provide: ChargingUnitService, useValue: { getByStationId: () => Promise.resolve([]) } }]
+                    providers: [
+                        {
+                            provide: ChargingUnitService,
+                            useValue: {
+                                getChargingUnits: () => Promise.resolve([]),
+                                getByStationId: () => Promise.resolve([])
+                            }
+                        }
+                    ]
                 }
             })
             .compileComponents();

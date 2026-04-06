@@ -31,7 +31,7 @@ import { LayoutService } from '@/app/layout/service/layout.service';
 import { parseStationDetailTabFragment, STATION_DETAIL_VALID_TAB_VALUES } from './station-detail-tab-fragment';
 import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { AvatarEditorDialogComponent } from '@/app/shared/image-editor/avatar-editor-dialog.component';
-import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
+import { ChargingUnitService } from '@/app/pages/service/charging-unit.service';
 import { ChargingUnitWidget } from '@/app/pages/dashboard/components/chargingunitwidget';
 import { WorkingHoursGrid } from './working-hours-grid';
 
@@ -246,10 +246,7 @@ export interface StationPicture {
                             </div>
                         </p-tabpanel>
                         <p-tabpanel value="1">
-                            <app-charging-unit-widget />
-                            @if (stationChargingUnits().length === 0) {
-                                <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.tabPlaceholder' | t }}</p>
-                            } 
+                            <app-charging-unit-widget [stationId]="r.id" />
                         </p-tabpanel>
                         <p-tabpanel value="2">
                             <app-working-hours-grid
@@ -323,9 +320,6 @@ export class StationManagementDetail implements OnInit {
 
     readonly atMaxPictures = computed(() => this.pictures().length >= MAX_STATION_PICTURES);
 
-    readonly stationChargingUnits = signal<ChargingUnit[]>([]);
-    private readonly chargingUnitService = inject(ChargingUnitService);
-
     readonly placeholderTabIndices = [1, 2, 3, 4];
 
     constructor() {
@@ -378,7 +372,6 @@ export class StationManagementDetail implements OnInit {
                         this.loading.set(false);
                         this.notFound.set(true);
                         this.row.set(null);
-                        this.stationChargingUnits.set([]);
                         return EMPTY;
                     }
 
@@ -388,7 +381,6 @@ export class StationManagementDetail implements OnInit {
                     this.loading.set(true);
                     this.notFound.set(false);
                     this.row.set(null);
-                    this.stationChargingUnits.set([]);
 
                     return this.mgmt.load().pipe(map(() => id));
                 })
@@ -399,9 +391,6 @@ export class StationManagementDetail implements OnInit {
                     this.row.set(found ?? null);
                     this.notFound.set(!found);
                     this.loading.set(false);
-                    if (found) {
-                        this.chargingUnitService.getByStationId(found.id).then((units) => this.stationChargingUnits.set(units));
-                    }
                 },
                 error: () => {
                     this.row.set(null);

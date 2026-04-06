@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RippleModule } from 'primeng/ripple';
 import { ButtonModule } from 'primeng/button';
@@ -215,9 +215,11 @@ import { ChargingUnitConnectorsWidget } from '@/app/pages/dashboard/components/c
             />
         }
     </div>`,
-    providers: [ChargingUnitService, ChargingUnitConnectorService, MessageService]
+    providers: [ChargingUnitConnectorService, MessageService]
 })
 export class ChargingUnitWidget implements OnInit {
+    readonly stationId = input<number>();
+
     readonly units = signal<ChargingUnit[]>([]);
     readonly first = signal(0);
     readonly pageSize = 5;
@@ -239,7 +241,13 @@ export class ChargingUnitWidget implements OnInit {
     private readonly i18n = inject(I18nService);
 
     ngOnInit(): void {
-        void this.chargingUnitService.getChargingUnits().then((data) => {
+        const sid = this.stationId();
+        const unitsPromise =
+            sid !== undefined
+                ? this.chargingUnitService.getByStationId(sid)
+                : this.chargingUnitService.getChargingUnits();
+
+        void unitsPromise.then((data) => {
             this.first.set(0);
             this.photoBrokenKeys.set(new Set());
             this.units.set(data);

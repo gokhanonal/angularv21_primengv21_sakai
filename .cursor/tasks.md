@@ -2042,3 +2042,76 @@ Replace the **Working Hours** tab (**`p-tabpanel` value `"2"`**) placeholder on 
 ### Handoff — ready for implementation
 
 Implement the **Working Hours** tab UI as a **7×48** selectable grid with **click**, **column-scoped drag-to-select**, **double-click column toggle all/clear**, **per-day 30-minute-accurate summary**, and **Save** that **serializes** to the agreed JSON (**merge contiguous slots**, **`closingTime` = end − **1 minute**, **`isClosed: false`** for open ranges). **Confirm with backend** the **`dayOfTheWeek`** mapping and **closed-day** representation before locking the serializer; wire **Save** to the chosen sink once product confirms.
+
+
+## ChargingUnitWidget: filter by `stationId` on station detail
+
+### Source intent
+
+> chargingunitwidget must be filtered with stationId. currently it displays all charging units in `public/demo/charging_unit.json`
+
+### Goal
+
+On **Station management → station detail → Charging Units** tab, the widget must list **only charging units whose `stationId` matches the open station**, consistent with demo data in `public/demo/charging_unit.json` (units are partitioned by `stationId`). When the widget is used **without** a station context (e.g. a future dashboard card), it should remain able to show **all** units unless product later restricts that.
+
+### Product decisions
+
+| Topic | Default |
+|-------|--------|
+| **Station scoping** | **`stationId` is an optional `@Input()`** (or equivalent). **Set** on station detail (`r.id`); **omit** where “all units” is intended. |
+| **Who loads data** | **Widget loads** via existing `ChargingUnitService`: `getByStationId(stationId)` when `stationId` is set, else `getChargingUnits()`. **Defer** passing preloaded `ChargingUnit[]` from parent unless a follow-up story requires zero duplicate network/logic (parent `stationChargingUnits` is then removable). |
+| **Service instance / double fetch** | **Single `ChargingUnitService` per screen**: resolve **duplicate provider** issue — widget declares `providers: [ChargingUnitService, …]` while `station-management-detail` also provides `ChargingUnitService`, so the parent’s `getByStationId` and the widget’s `getChargingUnits` can hit the JSON **twice** with **different instances**. Engineering should **reuse one instance** (lift providers, `inject` hierarchy, or remove redundant provider on one side) while keeping behavior correct. |
+| **Parent `stationChargingUnits`** | **Redundant** once the widget filters correctly; remove or repurpose (e.g. only “no units” messaging) to avoid **conflicting** empty-state logic. |
+| **Connectors** | **No separate product rule** if connectors stay keyed by `deviceCode`: visible units only render their connectors. Optionally **filter connector fetch/map** by visible `deviceCode`s for clarity/perf — **engineering choice** for demo scale. |
+| **Empty station** | Show widget **empty state** (`dashboard.chargingUnits.empty`) for **zero** units for that station; **do not** show the generic `stationMgmt.tabPlaceholder` **in addition** when the widget already communicates emptiness (fixes current mismatch: widget lists all units while placeholder keys off filtered count). |
+
+### Functional requirements
+
+1. **FR-1** When `stationId` is **provided** (station detail), the widget displays **only** units with `unit.stationId === stationId` (same semantics as `ChargingUnitService.getByStationId`).
+2. **FR-2** When `stationId` is **not** provided, the widget behavior matches today: **all** units from the charging-unit demo source (photos merge unchanged).
+3. **FR-3** **Pagination** (`pageSize`, `first`) applies to the **filtered** list when `stationId` is set (reset to first page when `stationId` or data set changes).
+4. **FR-4** **Connectors** shown under each card are **only** those for that row’s `deviceCode` (already true; must remain correct after filtering).
+5. **FR-5** **Station management detail** passes the **current station’s id** into the widget (e.g. `[stationId]="r.id"` inside the `row(); as r` branch).
+6. **FR-6** Loading/error behavior for units remains **graceful** (empty list on failure, consistent with service today); connector load error toast unchanged unless engineering unifies loading.
+
+### Non-functional requirements
+
+- **NFR-1** Avoid **unnecessary duplicate** fetches of the same JSON on the station detail page once service injection is unified (measurable: one logical load of `charging_unit.json` per station view where feasible).
+- **NFR-2** No new user-facing strings required if existing **i18n** keys cover empty and error states; any new copy must go through **en/tr/fr/de**.
+- **NFR-3** **Change scope** limited to widget + station detail wiring (+ tests); no backend contract change for this story (demo JSON remains source of truth).
+
+### Edge cases and negative scenarios
+
+- **Invalid / missing station row** — Widget not rendered or `stationId` absent; no crash; no filter if input undefined.
+- **`stationId` changes** (navigate station A → B) — Widget list updates to new station; pagination resets; photo error keys reset as today when data reloads.
+- **Station with zero units** — Widget shows **empty** state; parent must **not** show a contradictory “placeholder” line implying the tab is unimplemented **unless** product wants placeholder for non-demo tabs only (default: remove redundant placeholder for this tab).
+- **Demo JSON partial failure** — Units empty; connectors may still load or fail independently; no leaked cross-station units in UI when `stationId` set.
+- **Future dashboard** — `<app-charging-unit-widget />` without input continues to show **all** units per FR-2.
+
+### Acceptance criteria
+
+- [x] Open station **4363** (or any id present in demo data) → Charging Units tab shows **only** units with that `stationId` (e.g. **2** units for 4363), not all **8**.
+- [x] Open a station with **no** units in JSON → widget shows **empty** messaging; **no** misleading list of other stations’ units; **no** duplicate contradictory empty hint unless product explicitly keeps one message.
+- [x] With `stationId` **unset** (standalone / test harness), widget still lists **all** units from demo source.
+- [x] Connectors under each visible unit still match **`charging_unit_connectors.json`** for that `deviceCode`.
+- [x] `ng test` / existing `ChargingUnitWidget` tests updated or added for **filtered** vs **unfiltered** modes.
+- [x] `ng build` succeeds.
+
+### Out of scope
+
+- **Real API** integration or replacing `/demo/charging_unit.json`.
+- **CRUD** actions (add/edit/delete) — still no-op / placeholder.
+- **Global station filter** on dashboard unless a separate story adds the widget there with product rules.
+- **Backend pagination** or server-side filter contracts.
+
+### Implementation breakdown (for engineering)
+
+- [x] Add optional **`stationId`** input to `ChargingUnitWidget`; in `ngOnInit` (or `effect`), call **`getByStationId`** vs **`getChargingUnits`**; reset `first` / photo broken set when data or `stationId` changes.
+- [x] **Unify `ChargingUnitService` provider** between `StationManagementDetail` and `ChargingUnitWidget` to avoid two instances and double JSON fetch; adjust tests if they rely on per-component providers.
+- [x] **`station-management-detail`**: bind `[stationId]="r.id"`; remove or simplify **`stationChargingUnits`** and the **`@if (stationChargingUnits().length === 0)`** block so UI is consistent with widget state.
+- [ ] Optionally restrict connector map to **device codes** present in loaded units (cleanup only).
+- [x] Update **`chargingunitwidget.spec.ts`** (and any affected station detail tests) for filter behavior.
+
+### Handoff — ready for implementation
+
+Implement **optional `stationId`** on **`ChargingUnitWidget`**, load **filtered** units via existing **`getByStationId`**, wire **`[stationId]="r.id"`** on station detail, and **reconcile providers + parent `stationChargingUnits` placeholder** so the tab shows **one coherent list** and **no double fetch** where possible. Preserve **unfiltered** mode for usages without `stationId`. Verify connectors stay aligned with visible **`deviceCode`**s.

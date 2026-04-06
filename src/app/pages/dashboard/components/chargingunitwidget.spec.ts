@@ -44,7 +44,8 @@ describe('ChargingUnitWidget', () => {
 
     async function setup(
         units: ChargingUnit[] = mockUnits,
-        getConnectors: () => Promise<unknown> = () => Promise.resolve([])
+        getConnectors: () => Promise<unknown> = () => Promise.resolve([]),
+        options?: { stationId?: number }
     ): Promise<void> {
         TestBed.resetTestingModule();
         await TestBed.configureTestingModule({
@@ -60,7 +61,11 @@ describe('ChargingUnitWidget', () => {
                     providers: [
                         {
                             provide: ChargingUnitService,
-                            useValue: { getChargingUnits: () => Promise.resolve(units) }
+                            useValue: {
+                                getChargingUnits: () => Promise.resolve(units),
+                                getByStationId: (id: number) =>
+                                    Promise.resolve(units.filter((u) => u.stationId === id))
+                            }
                         },
                         {
                             provide: ChargingUnitConnectorService,
@@ -73,6 +78,9 @@ describe('ChargingUnitWidget', () => {
             .compileComponents();
 
         fixture = TestBed.createComponent(ChargingUnitWidget);
+        if (options?.stationId !== undefined) {
+            fixture.componentRef.setInput('stationId', options.stationId);
+        }
         fixture.detectChanges();
         await fixture.whenStable();
         fixture.detectChanges();
@@ -84,7 +92,7 @@ describe('ChargingUnitWidget', () => {
 
     it('renders card chrome, title line, field labels, and loads data from ChargingUnitService', () => {
         const text = fixture.nativeElement.textContent as string;
-        expect(text).toContain('Add New');
+        expect(text).toContain('Add Charging Unit');
         expect(text).toContain('B - M - 3434026401');
         expect(text).toContain('OK');
         expect(text).toContain('Access Type');
@@ -126,6 +134,94 @@ describe('ChargingUnitWidget', () => {
         expect(text).toContain('No connector yet');
     });
 
+    it('without stationId calls getChargingUnits and lists all units from the service', async () => {
+        const getChargingUnits = jasmine.createSpy('getChargingUnits').and.returnValue(Promise.resolve(mockUnits));
+        const getByStationId = jasmine.createSpy('getByStationId');
+        TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [ChargingUnitWidget],
+            providers: [
+                providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
+                I18nService,
+                MessageService
+            ]
+        })
+            .overrideComponent(ChargingUnitWidget, {
+                set: {
+                    providers: [
+                        { provide: ChargingUnitService, useValue: { getChargingUnits, getByStationId } },
+                        {
+                            provide: ChargingUnitConnectorService,
+                            useValue: { getConnectors: () => Promise.resolve([]) }
+                        },
+                        MessageService
+                    ]
+                }
+            })
+            .compileComponents();
+
+        fixture = TestBed.createComponent(ChargingUnitWidget);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(getChargingUnits).toHaveBeenCalled();
+        expect(getByStationId).not.toHaveBeenCalled();
+        expect(fixture.nativeElement.textContent as string).toContain('B - M - 3434026401');
+    });
+
+    it('with stationId calls getByStationId and shows only units for that station', async () => {
+        const uStation1 = { ...baseUnit(), stationId: 1, deviceCode: 'S1-DEV' };
+        const uStation2 = { ...baseUnit(), stationId: 2, deviceCode: 'S2-DEV', serialNumber: 'SN-2' };
+        const getChargingUnits = jasmine.createSpy('getChargingUnits');
+        const getByStationId = jasmine
+            .createSpy('getByStationId')
+            .and.returnValue(Promise.resolve([uStation1]));
+        TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [ChargingUnitWidget],
+            providers: [
+                providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
+                I18nService,
+                MessageService
+            ]
+        })
+            .overrideComponent(ChargingUnitWidget, {
+                set: {
+                    providers: [
+                        { provide: ChargingUnitService, useValue: { getChargingUnits, getByStationId } },
+                        {
+                            provide: ChargingUnitConnectorService,
+                            useValue: { getConnectors: () => Promise.resolve([]) }
+                        },
+                        MessageService
+                    ]
+                }
+            })
+            .compileComponents();
+
+        fixture = TestBed.createComponent(ChargingUnitWidget);
+        fixture.componentRef.setInput('stationId', 1);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(getByStationId).toHaveBeenCalledWith(1);
+        expect(getChargingUnits).not.toHaveBeenCalled();
+        const text = fixture.nativeElement.textContent as string;
+        expect(text).toContain('S1-DEV');
+        expect(text).not.toContain('S2-DEV');
+    });
+
+    it('when stationId is set with a shared mock, only matching units appear in the template', async () => {
+        const u1 = { ...baseUnit(), stationId: 100, deviceCode: 'ONLY-100' };
+        const u2 = { ...baseUnit(), stationId: 200, deviceCode: 'ONLY-200', serialNumber: 'SN-200' };
+        await setup([u1, u2], () => Promise.resolve([]), { stationId: 100 });
+        const text = fixture.nativeElement.textContent as string;
+        expect(text).toContain('ONLY-100');
+        expect(text).not.toContain('ONLY-200');
+    });
+
     it('shows error toast and empty connectors when connector load fails', async () => {
         TestBed.resetTestingModule();
         await TestBed.configureTestingModule({
@@ -141,7 +237,11 @@ describe('ChargingUnitWidget', () => {
                     providers: [
                         {
                             provide: ChargingUnitService,
-                            useValue: { getChargingUnits: () => Promise.resolve(mockUnits) }
+                            useValue: {
+                                getChargingUnits: () => Promise.resolve(mockUnits),
+                                getByStationId: (id: number) =>
+                                    Promise.resolve(mockUnits.filter((u) => u.stationId === id))
+                            }
                         },
                         {
                             provide: ChargingUnitConnectorService,
@@ -154,8 +254,10 @@ describe('ChargingUnitWidget', () => {
             .compileComponents();
 
         fixture = TestBed.createComponent(ChargingUnitWidget);
-        const messages = TestBed.inject(MessageService);
+        const messages = fixture.componentRef.injector.get(MessageService);
         spyOn(messages, 'add');
+        fixture.detectChanges();
+        await fixture.whenStable();
         fixture.detectChanges();
         await fixture.whenStable();
         fixture.detectChanges();
