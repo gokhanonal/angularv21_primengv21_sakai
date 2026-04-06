@@ -12,6 +12,7 @@ import {
 import { ButtonModule } from 'primeng/button';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
+import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 
 /** 48 half-hour slots per day, rows labeled 00:00–00:29 … 23:30–23:59 */
 const NUM_SLOTS = 48;
@@ -85,12 +86,16 @@ function formatDurationFromTemplate(fmt: string, totalMinutes: number): string {
     selector: 'app-working-hours-grid',
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, ButtonModule, TranslatePipe],
+    imports: [CommonModule, ButtonModule, TranslatePipe, CardMaximizeDirective],
     template: `
-        <div
-            class="working-hours-card surface-card border border-surface-200 dark:border-surface-700 rounded-border p-4"
-            [class.working-hours-dragging]="dragActive()"
-        >
+    <div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
+        <div class="card-header">
+            <div class="card-heading">
+                <p class="card-description">Double click to select all cells, drag to select cells, double click to clear selection</p>
+            </div>
+        </div>
+        <div class="card-header-divider"></div>
+
             <div class="working-hours-grid-scroll overflow-auto max-h-[min(70vh,42rem)] rounded-border border border-surface-200 dark:border-surface-700">
                 <table class="working-hours-table w-full border-collapse text-sm">
                     <thead>
@@ -162,7 +167,7 @@ function formatDurationFromTemplate(fmt: string, totalMinutes: number): string {
                     (onClick)="onSave()"
                 />
             </div>
-        </div>
+    </div>
     `,
     styles: [
         `

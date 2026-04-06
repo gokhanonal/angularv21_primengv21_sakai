@@ -33,7 +33,6 @@ import { ChargingUnitConnectorsWidget } from '@/app/pages/dashboard/components/c
         ChargingUnitConnectorsWidget
     ],
     template: `<div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
-        <p-toast />
         <div class="card-header">
             <div class="card-actions">
                 <a href="#" class="card-action-link" (click)="$event.preventDefault()">
