@@ -12,7 +12,9 @@ import {
     viewChild
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { EMPTY } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CarouselModule } from 'primeng/carousel';
 import { InputTextModule } from 'primeng/inputtext';
@@ -25,6 +27,8 @@ import { I18nService } from '@/app/core/i18n/i18n.service';
 import { stationManagementCompanyLogoSrc } from './station-management-logo';
 import { StationManagementRow } from './station-management.model';
 import { StationManagementService } from './station-management.service';
+import { LayoutService } from '@/app/layout/service/layout.service';
+import { parseStationDetailTabFragment, STATION_DETAIL_VALID_TAB_VALUES } from './station-detail-tab-fragment';
 import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { AvatarEditorDialogComponent } from '@/app/shared/image-editor/avatar-editor-dialog.component';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
@@ -102,7 +106,7 @@ export interface StationPicture {
                     />
                 </div>
 
-                <p-tabs value="0">
+                <p-tabs [value]="activeTab()" (valueChange)="onTabChange($event)">
                     <p-tablist>
                         <p-tab value="0">{{ 'stationMgmt.tabs.stationInfo' | t }}</p-tab>
                         <p-tab value="1">{{ 'stationMgmt.tabs.chargingUnits' | t }}</p-tab>
@@ -243,14 +247,7 @@ export interface StationPicture {
                             <app-charging-unit-widget />
                             @if (stationChargingUnits().length === 0) {
                                 <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.tabPlaceholder' | t }}</p>
-                            } @else {
-                                @for (unit of stationChargingUnits(); track unit.deviceCode) {
-                                    <div class="mb-3 p-3 border border-surface-200 dark:border-surface-700 rounded-md">
-                                        <span class="font-medium">{{ unit.deviceCode }}</span>
-                                        <span class="text-surface-500 dark:text-surface-400 ml-2">{{ unit.serialNumber }}</span>
-                                    </div>
-                                }
-                            }
+                            } 
                         </p-tabpanel>
                         @for (i of placeholderTabIndices; track i) {
                             <p-tabpanel [value]="placeholderTabValue(i)">
@@ -280,9 +277,23 @@ export interface StationPicture {
 })
 export class StationManagementDetail implements OnInit {
     private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
     private readonly mgmt = inject(StationManagementService);
     private readonly i18n = inject(I18nService);
+    private readonly layoutService = inject(LayoutService);
     private readonly destroyRef = inject(DestroyRef);
+
+    private static readonly TAB_I18N_KEYS: Record<string, string> = {
+        '0': 'stationMgmt.tabs.stationInfo',
+        '1': 'stationMgmt.tabs.chargingUnits',
+        '2': 'stationMgmt.tabs.workingHours',
+        '3': 'stationMgmt.tabs.pricing',
+        '4': 'stationMgmt.tabs.commissions',
+        '5': 'stationMgmt.tabs.stationUsers',
+        '6': 'stationMgmt.tabs.accounting'
+    };
+
+    readonly activeTab = signal('0');
 
     private readonly fileInputRef = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -330,6 +341,18 @@ export class StationManagementDetail implements OnInit {
             });
             this.prevPicturesStationKey = key;
         });
+
+        effect(() => {
+            this.i18n.lang();
+            this.activeTab();
+            this.loading();
+            this.notFound();
+            untracked(() => this.syncDetailTabBreadcrumb());
+        });
+
+        this.destroyRef.onDestroy(() => {
+            this.layoutService.detailTabBreadcrumb.set(null);
+        });
     }
 
     placeholderTabValue(i: number): string {
@@ -337,25 +360,39 @@ export class StationManagementDetail implements OnInit {
     }
 
     ngOnInit(): void {
-        const idParam = this.route.snapshot.paramMap.get('stationId');
-        const id = idParam ? Number.parseInt(idParam, 10) : Number.NaN;
-        if (!Number.isFinite(id)) {
-            this.loading.set(false);
-            this.notFound.set(true);
-            return;
-        }
+        this.route.paramMap
+            .pipe(
+                takeUntilDestroyed(this.destroyRef),
+                switchMap(() => {
+                    const idParam = this.route.snapshot.paramMap.get('stationId');
+                    const id = idParam ? Number.parseInt(idParam, 10) : Number.NaN;
+                    if (!Number.isFinite(id)) {
+                        this.loading.set(false);
+                        this.notFound.set(true);
+                        this.row.set(null);
+                        this.stationChargingUnits.set([]);
+                        return EMPTY;
+                    }
 
-        this.mgmt
-            .load()
-            .pipe(takeUntilDestroyed(this.destroyRef))
+                    const parsed = parseStationDetailTabFragment(this.route.snapshot.fragment);
+                    this.activeTab.set(parsed);
+
+                    this.loading.set(true);
+                    this.notFound.set(false);
+                    this.row.set(null);
+                    this.stationChargingUnits.set([]);
+
+                    return this.mgmt.load().pipe(map(() => id));
+                })
+            )
             .subscribe({
-                next: () => {
+                next: (id) => {
                     const found = this.mgmt.findById(id);
                     this.row.set(found ?? null);
                     this.notFound.set(!found);
                     this.loading.set(false);
                     if (found) {
-                        this.chargingUnitService.getByStationId(found.id).then(units => this.stationChargingUnits.set(units));
+                        this.chargingUnitService.getByStationId(found.id).then((units) => this.stationChargingUnits.set(units));
                     }
                 },
                 error: () => {
@@ -364,6 +401,34 @@ export class StationManagementDetail implements OnInit {
                     this.loading.set(false);
                 }
             });
+    }
+
+    onTabChange(value: string | number | undefined): void {
+        if (value === undefined) {
+            return;
+        }
+        const v = String(value);
+        if (!STATION_DETAIL_VALID_TAB_VALUES.has(v)) {
+            return;
+        }
+        this.activeTab.set(v);
+        void this.router.navigate([], {
+            relativeTo: this.route,
+            fragment: `tab=${v}`,
+            replaceUrl: true
+        });
+    }
+
+    private syncDetailTabBreadcrumb(): void {
+        const idParam = this.route.snapshot.paramMap.get('stationId');
+        const id = idParam ? Number.parseInt(idParam, 10) : Number.NaN;
+        if (!Number.isFinite(id) || this.notFound()) {
+            this.layoutService.detailTabBreadcrumb.set(null);
+            return;
+        }
+        const tab = this.activeTab();
+        const key = StationManagementDetail.TAB_I18N_KEYS[tab] ?? StationManagementDetail.TAB_I18N_KEYS['0'];
+        this.layoutService.detailTabBreadcrumb.set(this.i18n.t(key));
     }
 
     companyLogo(r: StationManagementRow): string | null {

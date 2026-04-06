@@ -32,7 +32,7 @@ interface BreadcrumbItem {
             }
             <div class="layout-page-header">
                 <div class="layout-page-breadcrumb">
-                    @for (crumb of breadcrumbs(); track crumb.url; let isLast = $last) {
+                    @for (crumb of breadcrumbs(); track $index; let isLast = $last) {
                         @if (!isLast) {
                             <a [routerLink]="crumb.url">{{ crumb.label }}</a>
                             <i class="pi pi-angle-right"></i>
@@ -277,6 +277,7 @@ export class AppTopbar {
     constructor() {
         effect(() => {
             this.i18n.lang();
+            this.layoutService.detailTabBreadcrumb();
             this.updateBreadcrumbs();
         });
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
@@ -312,6 +313,11 @@ export class AppTopbar {
             });
 
             nextRoute = currentRoute.firstChild;
+        }
+
+        const tabLabel = this.layoutService.detailTabBreadcrumb();
+        if (tabLabel && currentUrl) {
+            crumbs.push({ label: tabLabel, url: currentUrl });
         }
 
         this.breadcrumbs.set(crumbs);

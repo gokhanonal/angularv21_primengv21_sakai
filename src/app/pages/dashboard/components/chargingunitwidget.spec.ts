@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
+import { MessageService } from 'primeng/api';
 import { ChargingUnitWidget } from './chargingunitwidget';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
+import { ChargingUnitConnectorService } from '@/app/pages/service/charging-unit-connector.service';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 
 describe('ChargingUnitWidget', () => {
@@ -40,11 +42,18 @@ describe('ChargingUnitWidget', () => {
 
     const mockUnits: ChargingUnit[] = [baseUnit()];
 
-    async function setup(units: ChargingUnit[] = mockUnits): Promise<void> {
+    async function setup(
+        units: ChargingUnit[] = mockUnits,
+        getConnectors: () => Promise<unknown> = () => Promise.resolve([])
+    ): Promise<void> {
         TestBed.resetTestingModule();
         await TestBed.configureTestingModule({
             imports: [ChargingUnitWidget],
-            providers: [providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }), I18nService]
+            providers: [
+                providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
+                I18nService,
+                MessageService
+            ]
         })
             .overrideComponent(ChargingUnitWidget, {
                 set: {
@@ -52,7 +61,12 @@ describe('ChargingUnitWidget', () => {
                         {
                             provide: ChargingUnitService,
                             useValue: { getChargingUnits: () => Promise.resolve(units) }
-                        }
+                        },
+                        {
+                            provide: ChargingUnitConnectorService,
+                            useValue: { getConnectors }
+                        },
+                        MessageService
                     ]
                 }
             })
@@ -103,5 +117,56 @@ describe('ChargingUnitWidget', () => {
         }));
         await setup(six);
         expect(fixture.nativeElement.querySelector('p-paginator')).toBeTruthy();
+    });
+
+    it('renders Connectors section and no-connector copy when device has no connectors', async () => {
+        await setup();
+        const text = fixture.nativeElement.textContent as string;
+        expect(text).toContain('Connectors');
+        expect(text).toContain('No connector yet');
+    });
+
+    it('shows error toast and empty connectors when connector load fails', async () => {
+        TestBed.resetTestingModule();
+        await TestBed.configureTestingModule({
+            imports: [ChargingUnitWidget],
+            providers: [
+                providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
+                I18nService,
+                MessageService
+            ]
+        })
+            .overrideComponent(ChargingUnitWidget, {
+                set: {
+                    providers: [
+                        {
+                            provide: ChargingUnitService,
+                            useValue: { getChargingUnits: () => Promise.resolve(mockUnits) }
+                        },
+                        {
+                            provide: ChargingUnitConnectorService,
+                            useValue: { getConnectors: () => Promise.reject(new Error('fail')) }
+                        },
+                        MessageService
+                    ]
+                }
+            })
+            .compileComponents();
+
+        fixture = TestBed.createComponent(ChargingUnitWidget);
+        const messages = TestBed.inject(MessageService);
+        spyOn(messages, 'add');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        expect(messages.add).toHaveBeenCalledWith(
+            jasmine.objectContaining({
+                severity: 'error',
+                summary: 'Connector Load Error',
+                detail: 'Connectors could not be loaded. Showing empty connector information.'
+            })
+        );
+        expect(fixture.nativeElement.textContent).toContain('No connector yet');
     });
 });

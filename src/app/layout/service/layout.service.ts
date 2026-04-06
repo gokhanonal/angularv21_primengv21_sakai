@@ -105,6 +105,9 @@ export class LayoutService {
 
     transitionComplete = signal<boolean>(false);
 
+    /** Resolved i18n label for station detail active tab; set by detail page, cleared on destroy. */
+    readonly detailTabBreadcrumb = signal<string | null>(null);
+
     constructor() {
         this.loadBrandingFromStorage();
         if (isPlatformBrowser(this.platformId)) {

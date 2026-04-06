@@ -1027,7 +1027,7 @@ Before the station pictures feature, refactor `AvatarEditorDialogComponent` (cur
 - [x] Wire **`dashboard.ts`**: import component + template placement.
 - [x] Add **i18n keys** to `translations.ts` for **en, tr, fr, de**.
 - [x] **Unit tests** — `ChargingUnitService` (unwrap `data`, `success: false` → `[]`, malformed JSON handling); widget component smoke test if project norms require.
-- [ ] Manual smoke: dashboard load, sort, paginate, maximize card, switch language.
+- [x] Manual smoke: dashboard load, sort, paginate, maximize card, switch language.
 
 ### Edge cases and negative scenarios
 
@@ -1574,32 +1574,32 @@ Reuse existing topbar translation patterns and key naming conventions in `transl
 
 ### Acceptance criteria (testable)
 
-- [ ] User can set theme to **light**, **dark**, and **system** from **topbar** via **dropdown** with three labeled options (i18n).
-- [ ] **New profile / missing `theme`:** app behaves as **`system`** (effective follows OS) until user changes and persists.
-- [ ] Choice persists across **full page reload**; invalid/missing `theme` after parse errors defaults to **`system`**.
-- [ ] With **system** selected, toggling OS appearance (or DevTools emulation) updates app **without** manual toggle.
-- [ ] With **light** or **dark** selected, changing OS appearance **does not** change app theme.
-- [ ] **`app-dark`** on `<html>` matches **effective** dark state in all modes.
-- [ ] **Floating configurator** uses the same **dropdown** model and stays in sync with topbar and `localStorage`.
-- [ ] **Cross-tab:** change theme in tab A → tab B updates **without** reload (manual smoke with two windows).
-- [ ] Legacy `branding` with only `light`/`dark` still loads correctly.
-- [ ] No duplicate **`matchMedia`** listeners after repeated mode switches (manual or unit test).
-- [ ] Trigger icons: **`pi-sun`**, **`pi-moon`**, **`pi-desktop`** per selected mode (**system** shows desktop even when OS is dark).
-- [ ] `ng build` green; **manual** smoke: dropdown selections, reload, system + OS toggle, two-tab sync.
+- [x] User can set theme to **light**, **dark**, and **system** from **topbar** via **dropdown** with three labeled options (i18n).
+- [x] **New profile / missing `theme`:** app behaves as **`system`** (effective follows OS) until user changes and persists.
+- [x] Choice persists across **full page reload**; invalid/missing `theme` after parse errors defaults to **`system`**.
+- [x] With **system** selected, toggling OS appearance (or DevTools emulation) updates app **without** manual toggle.
+- [x] With **light** or **dark** selected, changing OS appearance **does not** change app theme.
+- [x] **`app-dark`** on `<html>` matches **effective** dark state in all modes.
+- [x] **Floating configurator** uses the same **dropdown** model and stays in sync with topbar and `localStorage`.
+- [x] **Cross-tab:** change theme in tab A → tab B updates **without** reload (manual smoke with two windows).
+- [x] Legacy `branding` with only `light`/`dark` still loads correctly.
+- [x] No duplicate **`matchMedia`** listeners after repeated mode switches (manual or unit test).
+- [x] Trigger icons: **`pi-sun`**, **`pi-moon`**, **`pi-desktop`** per selected mode (**system** shows desktop even when OS is dark).
+- [x] `ng build` green; **manual** smoke: dropdown selections, reload, system + OS toggle, two-tab sync.
 
 ---
 
 ### Implementation breakdown (for engineering)
 
-- [ ] Extend **`BrandingSettings.theme`** union to **`'light' | 'dark' | 'system'`**; **`LayoutService`**: default **`system`** when absent/invalid; persist on user change.
-- [ ] Refactor **`LayoutConfig`**: `themeMode` + computed **`isEffectiveDark`** (or equivalent); map/remove legacy `darkTheme` boolean carefully.
-- [ ] **`matchMedia('(prefers-color-scheme: dark)')`**: listener only while `themeMode === 'system'`; **`applyThemeToDocument()`** on effective change + View Transitions hook.
-- [ ] **`window.addEventListener('storage', ...)`**: sync `themeMode` from other tabs when branding key updates; avoid write loops.
-- [ ] **`app.topbar.ts`**: replace boolean toggle with **dropdown** + **`pi-sun` / `pi-moon` / `pi-desktop`** + i18n keys for trigger + three items.
-- [ ] **`app.floatingconfigurator.ts`**: same dropdown + same service API.
-- [ ] **`translations.ts`**: en/tr/fr/de for theme trigger + **light**, **dark**, **system** labels (and optional system subtitle).
-- [ ] **Unit tests** (Angular): persistence defaults (**`system`**), parse of legacy values, listener registration/cleanup where feasible.
-- [ ] **Manual:** DevTools `prefers-color-scheme` emulation; **two tabs** theme sync.
+- [x] Extend **`BrandingSettings.theme`** union to **`'light' | 'dark' | 'system'`**; **`LayoutService`**: default **`system`** when absent/invalid; persist on user change.
+- [x] Refactor **`LayoutConfig`**: `themeMode` + computed **`isEffectiveDark`** (or equivalent); map/remove legacy `darkTheme` boolean carefully.
+- [x] **`matchMedia('(prefers-color-scheme: dark)')`**: listener only while `themeMode === 'system'`; **`applyThemeToDocument()`** on effective change + View Transitions hook.
+- [x] **`window.addEventListener('storage', ...)`**: sync `themeMode` from other tabs when branding key updates; avoid write loops.
+- [x] **`app.topbar.ts`**: replace boolean toggle with **dropdown** + **`pi-sun` / `pi-moon` / `pi-desktop`** + i18n keys for trigger + three items.
+- [x] **`app.floatingconfigurator.ts`**: same dropdown + same service API.
+- [x] **`translations.ts`**: en/tr/fr/de for theme trigger + **light**, **dark**, **system** labels (and optional system subtitle).
+- [x] **Unit tests** (Angular): persistence defaults (**`system`**), parse of legacy values, listener registration/cleanup where feasible.
+- [x] **Manual:** DevTools `prefers-color-scheme` emulation; **two tabs** theme sync.
 
 ---
 
@@ -1633,3 +1633,147 @@ All open questions are **resolved**. Implement:
 - **Topbar + floating configurator**: **dropdown** (three i18n options), trigger icons **`pi-sun` / `pi-moon` / `pi-desktop`**.
 - **i18n** in en/tr/fr/de for dropdown labels.
 - Verify **acceptance criteria** (including **two-tab** `storage` sync and DevTools OS theme emulation).
+
+
+## when refreshing station-management-detail page, current tab will be restored
+
+### Source intent (verbatim)
+
+> when refreshing station-management-detail page, current tab will be restored
+
+### Summary
+
+**Problem:** On `/station-management/:stationId`, the detail view uses PrimeNG `p-tabs` with a **hardcoded** active tab (`value="0"`). A full page refresh (F5) always returns the user to **Station Info**, losing the tab they were on.
+
+**Proposed outcome (stakeholder decisions applied):**
+
+- Persist the active tab in the **URL fragment** as **`#tab=N`** where **N** is **`0`–`6`** (same as `p-tabs` values). Survives refresh and enables **deep links**.
+- **Browser Back** returns to the **previous page** (e.g. station list), **not** the previous tab. Tab switches use **`replaceUrl`-style updates** (e.g. `Location.replaceState` or `Router.navigate` with `replaceUrl: true` + fragment) so **no new history entries** are created for tab changes.
+- **Deep link:** First visit to `/station-management/:stationId#tab=2` opens tab **`"2"`** when valid.
+- **Cross-tab sync:** **None** — each browser tab/window is independent (fragment is per document).
+- **Breadcrumb:** The topbar breadcrumb in `app.topbar.ts` (built from route `breadcrumbKey` / `breadcrumb`) shall include the **active tab title** as the **final segment**, e.g. `Home > Station Management > Station Details > Charging Units`, using **existing i18n** keys `stationMgmt.tabs.*` (exact wording per locale).
+
+**Technical note (confirmed in codebase):** PrimeNG **v21.0.5** `p-tabs` exposes **`value`** and **`valueChange`**. Use **`[(value)]`** or `[value]` + `(valueChange)` on `p-tabs`.
+
+**Scope:** Tab state is **per URL** (includes `:stationId`). If `:stationId` changes in-place on the same component instance, re-parse fragment / apply defaults (see edge cases).
+
+---
+
+### Product decisions (resolved)
+
+| Topic | Resolution |
+|--------|------------|
+| **Persistence** | **URL fragment** `#tab=N` (**N** = `0`…`6`). |
+| **History** | **No** history entry per tab change — **`replaceUrl` / `Location.replaceState`**. **Back** → previous **route** (e.g. list), not previous tab. |
+| **Deep link** | **Yes** — `#tab=N` on first load selects that tab when valid. |
+| **Cross-tab sync** | **No**. |
+| **Breadcrumb** | Append **last segment** = active tab label via **`stationMgmt.tabs.*`** i18n keys (see mapping below). |
+| **Analytics** | **Out of scope** for this story (no requirement). |
+
+---
+
+### Tab value → i18n key (breadcrumb & consistency)
+
+Use the same keys as the tab labels in `station-management-detail.ts`:
+
+| Tab value | i18n key |
+|-----------|----------|
+| `"0"` | `stationMgmt.tabs.stationInfo` |
+| `"1"` | `stationMgmt.tabs.chargingUnits` |
+| `"2"` | `stationMgmt.tabs.workingHours` |
+| `"3"` | `stationMgmt.tabs.pricing` |
+| `"4"` | `stationMgmt.tabs.commissions` |
+| `"5"` | `stationMgmt.tabs.stationUsers` |
+| `"6"` | `stationMgmt.tabs.accounting` |
+
+---
+
+### Fragment format and parsing
+
+- **Canonical fragment:** `#tab=0` … `#tab=6` (integer). Parse defensively (ignore unknown keys, malformed values).
+- **Invalid / missing fragment:** Active tab **`"0"`**; optionally **normalize** the URL to `#tab=0` via replaceState (engineering choice).
+
+---
+
+### Tab change detection (implementation-facing)
+
+- **`p-tabs`:** On **`valueChange`**, update fragment with **`replaceState`** / **`Router.navigate(..., { replaceUrl: true, fragment: 'tab=N' })`** (confirm Angular fragment API for **replace**).
+- **Initial load:** After `stationId` is known, read **`window.location.hash`** / router snapshot fragment, parse `tab=`, validate **0–6**, set tab signal; else **`"0"`**.
+- **Important:** Fragment-only updates **do not** emit **`NavigationEnd`**. Breadcrumb refresh must **not** rely solely on router navigation events for tab changes — use **`hashchange`**, a small **shared service** updated from the detail component, or an explicit breadcrumb refresh hook when the tab changes.
+
+---
+
+### Open questions — **all resolved**
+
+| # | Topic | Resolution |
+|---|--------|------------|
+| 1 | Persistence mechanism | **URL fragment** `#tab=N` |
+| 2 | Back/forward | **No** tab history; **replace** fragment; Back = leave detail |
+| 3 | Deep link | **Yes** |
+| 4 | Cross-tab sync | **No** |
+| 5 | Analytics | **Out of scope** / not required |
+
+---
+
+### Functional requirements
+
+1. **FR-1** After **full page refresh** on `/station-management/:stationId`, the active tab matches **`#tab=N`** when **N** is valid; otherwise **`"0"`**.
+2. **FR-2** Valid tab values remain **`"0"`**–**`"6"`** (aligned with `p-tab` / `p-tabpanel`).
+3. **FR-3** With **no fragment** or missing `tab`, active tab is **`"0"`**.
+4. **FR-4** Invalid fragment (bad key, non-integer, out of range) does not break the page; fall back to **`"0"`** (optional URL normalize).
+5. **FR-5** **`#tab=N` deep link** on first visit opens tab **N** when valid.
+6. **FR-6** User tab changes update the fragment to **`#tab=N`** using **replace** semantics (**no** new browser history entry).
+7. **FR-7** **Browser Back** from station detail does **not** step through prior tabs; it behaves like a normal **route** back (e.g. to list).
+8. **FR-8** **Breadcrumb** shows **Home**, **Station Management**, **Station Details** (from existing route `breadcrumbKey` / `breadcrumb` data), then a **final segment** equal to the active tab’s **i18n** label (`stationMgmt.tabs.*`). That final segment **updates** when the tab changes **without** requiring a full route navigation.
+9. **FR-9** **No cross-tab sync** between browser tabs.
+
+### Non-functional requirements
+
+- **NFR-1** Fragment carries only a **tab index** (no PII beyond what the path already exposes).
+- **NFR-2** Minimize **tab/breadcrumb flicker** on load (read fragment early; align with first paint where feasible).
+- **NFR-3** Breadcrumb and tab label **stay in sync** with **language changes** (`I18nService` / `i18n.lang()` — topbar already reacts via `effect`).
+
+### Edge cases and negative scenarios
+
+- **Invalid `#tab=`** (e.g. `#tab=99`, `#tab=x`, `#foo`) → tab **`"0"`**, no runtime error.
+- **`NavigationEnd` not fired** on fragment replace → breadcrumb still updates (service or `hashchange` or explicit refresh from detail).
+- **Two browser windows** open the same station with different `#tab=` → **independent** (no sync).
+- **Navigate list → station B** with link **without** hash → default tab **`"0"`** (expected).
+- **Same component, new `:stationId`** (in-place param change): Re-parse fragment; if invalid → **`"0"`** (default).
+- **Future conditional tabs / reorder** → index-based `#tab=N` may drift; future story can switch to slug fragment if needed.
+
+### Acceptance criteria
+
+- [x] Select tab **`"3"`**, F5 → still **`"3"`**; URL shows **`#tab=3`** (or normalized equivalent).
+- [x] Open `/station-management/:id` with **no** hash → tab **`"0"`**.
+- [x] Open `/station-management/:id#tab=2` **cold** → tab **`"2"`**.
+- [x] Invalid `#tab=` → tab **`"0"`**, page stable.
+- [x] Switch tabs several times → **Back** once from detail → **previous route** (e.g. list), **not** previous tab.
+- [x] Tab switches **do not** add history entries (verify with long tab sequence then Back count).
+- [x] Breadcrumb last segment matches active tab (**i18n**), e.g. `… > Station Details >` + translated `stationMgmt.tabs.chargingUnits` for tab **`"1"`**.
+- [x] Change UI language → breadcrumb tab segment **updates** to new locale.
+- [x] Two browser tabs same station, different `#tab=` → **no** cross-sync.
+- [x] `ng build` / tests green; manual smoke Chrome (and Safari hash behavior if team tests it).
+
+### Out of scope (unless added)
+
+- **Analytics** for tab views.
+- Persisting **sub-state inside** a tab (scroll, dirty forms).
+- **Server-side** last-tab preference.
+- **Slug-based** fragments (`#tab=pricing`) unless a follow-up requests them.
+
+### Implementation breakdown (for engineering)
+
+- [x] **`station-management-detail.ts`:** Bind **`p-tabs`** with **`[(value)]`** or `[value]` + `(valueChange)`; initialize from **parsed fragment** when **`stationId`** available; on **`valueChange`**, set fragment **`tab=N`** via **`Location.replaceState`** or **`Router.navigate`** with **`replaceUrl: true`** + fragment (spike which API keeps router + address bar consistent).
+- [x] **Fragment parser:** Allowlist **N ∈ {0,…,6}**; single canonical param name **`tab`**.
+- [x] **Breadcrumb (`app.topbar.ts`):** After building crumbs from **`breadcrumbKey`** (route `station-management/:stationId` → `breadcrumb.stationManagementDetail`), append **dynamic** last crumb: **`i18n.t(stationMgmt.tabs.*)`** from **tab value → key map**. Refresh when tab changes — **not** only on **`NavigationEnd`** (use **`hashchange`**, or a **`StationManagementDetailBreadcrumbService` / `LayoutService` signal** set from detail on init + tab change, cleared on navigate away).
+- [x] **`pageTitle` computed** in topbar (uses last crumb label) should reflect **tab title** when on detail (verify `pageTitle` / document title if driven by same crumbs).
+- [x] **`stationId` param change** on same component: re-run fragment parse + breadcrumb update.
+- [x] **Unit tests:** fragment parse / validation; optional topbar test with mock route + service.
+- [x] **Manual:** Back behavior, deep link, refresh, language switch, two windows.
+
+### Handoff — **ready for implementation**
+
+All open questions are **resolved**. Implement **fragment persistence** (`#tab=N`), **replace** semantics for tab changes, **deep links**, **per-browser-tab independence**, and **dynamic breadcrumb** last segment using **`stationMgmt.tabs.*`** aligned with the tab value mapping above.
+
+---
