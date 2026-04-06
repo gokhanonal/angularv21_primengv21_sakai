@@ -33,6 +33,7 @@ import { CardMaximizeDirective } from '@/app/shared/directives/card.directive';
 import { AvatarEditorDialogComponent } from '@/app/shared/image-editor/avatar-editor-dialog.component';
 import { ChargingUnit, ChargingUnitService } from '@/app/pages/service/charging-unit.service';
 import { ChargingUnitWidget } from '@/app/pages/dashboard/components/chargingunitwidget';
+import { WorkingHoursGrid } from './working-hours-grid';
 
 const MAX_STATION_PICTURES = 10;
 const MAX_PICTURE_BYTES = 1048576 * 2;
@@ -61,7 +62,8 @@ export interface StationPicture {
         TranslatePipe,
         CardMaximizeDirective,
         AvatarEditorDialogComponent,
-        ChargingUnitWidget
+        ChargingUnitWidget,
+        WorkingHoursGrid
     ],
     providers: [ChargingUnitService],
     template: `
@@ -249,6 +251,12 @@ export interface StationPicture {
                                 <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.tabPlaceholder' | t }}</p>
                             } 
                         </p-tabpanel>
+                        <p-tabpanel value="2">
+                            <app-working-hours-grid
+                                [stationId]="r.id"
+                                (savePayload)="onWorkingHoursSave($event)"
+                            />
+                        </p-tabpanel>
                         @for (i of placeholderTabIndices; track i) {
                             <p-tabpanel [value]="placeholderTabValue(i)">
                                 <p class="text-surface-600 dark:text-surface-400 m-0">{{ 'stationMgmt.tabPlaceholder' | t }}</p>
@@ -318,7 +326,7 @@ export class StationManagementDetail implements OnInit {
     readonly stationChargingUnits = signal<ChargingUnit[]>([]);
     private readonly chargingUnitService = inject(ChargingUnitService);
 
-    readonly placeholderTabIndices = [0, 1, 2, 3, 4];
+    readonly placeholderTabIndices = [1, 2, 3, 4];
 
     constructor() {
         effect(() => {
@@ -401,6 +409,10 @@ export class StationManagementDetail implements OnInit {
                     this.loading.set(false);
                 }
             });
+    }
+
+    onWorkingHoursSave(payload: unknown[]): void {
+        console.debug('[WorkingHours] Save payload:', payload);
     }
 
     onTabChange(value: string | number | undefined): void {

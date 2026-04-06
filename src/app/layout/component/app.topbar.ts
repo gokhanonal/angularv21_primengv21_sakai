@@ -1,8 +1,8 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ViewChild } from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
-import { MenuModule } from 'primeng/menu';
+import { MenuModule, Menu } from 'primeng/menu';
 import { AppConfigurator } from './app.configurator';
 import { AppLanguageSwitcher } from './app.language-switcher';
 import { LayoutService } from '@/app/layout/service/layout.service';
@@ -154,6 +154,8 @@ interface BreadcrumbItem {
     </div>`
 })
 export class AppTopbar {
+    @ViewChild('profileMenu') profileMenu!: Menu;
+
     items!: MenuItem[];
 
     router = inject(Router);
@@ -238,6 +240,8 @@ export class AppTopbar {
                 label: this.i18n.t('topbar.profileMenu.logout'),
                 icon: 'pi pi-sign-out',
                 command: () => {
+                    this.profileMenu?.container?.remove();
+                    this.profileMenu?.hide();
                     this.userProfile.clearMockSessionStorage();
                     void this.router.navigate(['/auth/login']);
                 }

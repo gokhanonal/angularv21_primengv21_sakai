@@ -1776,4 +1776,269 @@ Use the same keys as the tab labels in `station-management-detail.ts`:
 
 All open questions are **resolved**. Implement **fragment persistence** (`#tab=N`), **replace** semantics for tab changes, **deep links**, **per-browser-tab independence**, and **dynamic breadcrumb** last segment using **`stationMgmt.tabs.*`** aligned with the tab value mapping above.
 
----
+## Topbar profile popup menu: close on item click (logout and siblings)
+
+### Source intent
+
+> When click logout on profile menu, dropdown menu must disappear
+
+### Goal
+
+Ensure the **PrimeNG `p-menu` popup** attached to the **profile** control in `app.topbar.ts` **closes immediately** when the user activates any **actionable** menu item (at minimum **Log out**, and by default **Profile** and **Change password** as well), so the user does not see a **dangling overlay** after navigation or session clear. Align behavior with **expected popup-menu UX** and reduce confusion during **logout**, when the user is leaving the app shell.
+
+### Product decisions (defaults until stakeholders override)
+
+| Topic | Default |
+|--------|--------|
+| **Which items must close the menu** | **All** non-separator items in the **profile** menu (**Profile**, **Change password**, **Log out**). |
+| **Theme menu (`themeMenu`)** | **Same rule**: choosing **Light / Dark / System** shall **close** the theme popup. |
+| **Language switcher menu (`langMenu` in `app.language-switcher.ts`)** | **Same rule** if it uses the same **`p-menu` popup** pattern: choosing a language shall **close** the popup. |
+| **Animation** | **No new product requirement**: use **PrimeNG’s default** hide/show (instant or as provided by the library/CSS). |
+| **If navigation or command fails** | The **overlay must still close** (or enter a **fully hidden** state) so the user is not stuck behind a stale menu; any error handling for failed navigation is **separate** from menu visibility unless product says otherwise. |
+| **Focus after close** | **Preferred**: focus returns to the **menu trigger** button (profile / theme / language) per common **WAI-ARIA** menu button pattern; exact behavior may follow PrimeNG unless gaps are found in manual a11y check. |
+
+### Functional requirements
+
+1. **FR-1 — Profile menu closes on item activation**  
+   When the user activates **Profile**, **Change password**, or **Log out**, the profile **`p-menu` popup** shall **no longer be visible** before or as the resulting action runs (session clear + navigate for logout; navigate for the others).
+
+2. **FR-2 — Logout is explicitly covered**  
+   After **Log out** is activated, the profile dropdown shall **not** remain on screen while transitioning to **`/auth/login`** (no persistent overlay on the login route or during navigation).
+
+3. **FR-3 — Separators**  
+   **Separators** do not change visibility; only **command** items (and any future items with `command` or router links) are in scope for “close on activate.”
+
+4. **FR-4 — Theme menu parity (if same defect)**  
+   If manual verification shows the theme popup also stays open after picking a theme, **fix applies there too** so the theme **`p-menu`** closes on item activation.
+
+5. **FR-5 — Language menu parity (if same defect)**  
+   If the language **`p-menu`** exhibits the same behavior, **fix applies there too** for consistency across topbar popups.
+
+6. **FR-6 — Outside click and Escape**  
+   Existing **dismiss** behaviors (**outside click**, **Escape** if supported by PrimeNG) shall **not regress**.
+
+7. **FR-7 — Re-open after action**  
+   After closing, the user can **open the menu again** from the same trigger with **no** stuck “open” state (no invisible overlay blocking clicks).
+
+### Non-functional requirements
+
+- **NFR-1 — Consistency**  
+  Topbar **`p-menu` popups** (`profile`, `theme`, `language`) behave **consistently** regarding **close-on-select** unless a documented exception exists.
+
+- **NFR-2 — Accessibility**  
+  No **regression** of **`aria-haspopup`**, trigger **`aria-label`**, or keyboard activation of menu items. Where feasible, after close, **focus management** should match **menu button + menu** patterns (return focus to trigger or move focus logically with navigation).
+
+- **NFR-3 — Performance**  
+  Fix shall **not** introduce noticeable jank; avoid redundant change detection loops (e.g. unnecessary `setInterval`).
+
+- **NFR-4 — Maintainability**  
+  Prefer solutions that work **with** PrimeNG APIs (**`ViewChild` + `hide()` / `toggle`**, `onHide`, documented `Menu` methods) over fragile DOM hacks, unless a library bug forces a minimal workaround.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **`router.navigate` rejects or hangs** | Menu still **closes**; user may see error elsewhere — do not leave overlay open. |
+| **Rapid double-click** on **Log out** | No duplicate overlays; second activation is harmless or guarded by standard router/session behavior. |
+| **Navigation to same route** (e.g. already on `/profile`) | Menu **still closes** on item activation. |
+| **`appendTo="'body'"`** | Overlay is under `body`; verify **z-index** and **pointer-events** after hide (no ghost blocker). |
+| **i18n / `computed` menu model rebuild** | Closing the menu must **not** depend on fragile timing with **`profileMenuItems()`** recomputation. |
+| **Theme / language: command-only items** | Same close expectation as profile items. |
+| **Mobile / narrow layout** | If topbar uses a different chrome, confirm profile entry still closes its popup (if applicable). |
+
+### Acceptance criteria
+
+- [x] Activate **Log out** from the profile menu: popup **disappears** immediately; user lands on **`/auth/login`** without the profile menu still visible.
+- [x] Activate **Profile** and **Change password**: popup **closes**; navigation proceeds as today.
+- [x] **Theme** menu: selecting **Light**, **Dark**, or **System** **closes** the theme popup (or document exception if product limits scope to profile only).
+- [x] **Language** menu: selecting a language **closes** the language popup (same note as theme).
+- [x] **Outside click** still closes an open profile popup; **no** regression.
+- [x] **Keyboard**: activate a menu item with keyboard (Enter/Space as supported): menu **closes** and action runs.
+- [x] **No invisible overlay**: after close, underlying page (or login page) remains **clickable**.
+- [x] **`ng build`** succeeds; **manual** smoke on **Chrome** (and **Safari** if the team routinely tests it).
+
+### Out of scope
+
+- Redesigning the **topbar** or replacing **`p-menu`** with another component family (unless engineering concludes a library defect makes replacement necessary — then escalate as a **separate** decision).
+- Changing **logout** semantics (what is cleared, which route, real auth integration) beyond what exists today.
+- **Analytics** or **telemetry** for menu open/close.
+- **Custom** exit animations beyond PrimeNG/CSS defaults.
+
+### Open questions (suggested defaults)
+
+1. **Blocking — Scope beyond profile**  
+   Should **theme** and **language** menus be **in the same story**?  
+   *Default: **yes** if they share the same root cause; **no** only if spike proves profile-only.*
+
+2. **Nice-to-know — PrimeNG vs app**  
+   Is failure to hide due to **PrimeNG 21** + **`appendTo`**, **Angular** change detection, **`void navigate`**, or **command** ordering?  
+   *Engineering: short spike; brief documents finding.*
+
+3. **Nice-to-know — `aria-expanded`**  
+   Should the trigger expose **`aria-expanded`** when open?  
+   *Default: add if missing and low-cost; otherwise follow PrimeNG template guidance.*
+
+### Implementation breakdown (for engineering)
+
+- [x] **Reproduce** on current **`main`**: profile → **Log out**; confirm overlay persistence and whether **Profile** / **Change password** / **theme** / **language** show the same.
+- [x] **Spike root cause** (hypotheses to validate): **`command` runs** then **`Router.navigate`** races with Menu’s internal hide; **`appendTo="'body'"`** + overlay lifecycle; **`computed` model** identity causing Menu not to treat selection as “complete”; PrimeNG **bug** vs **integration** issue. Check **PrimeNG `Menu` / `p-menu` popup** docs and issues for **Angular 21** + **v21**.
+- [x] **Fix pattern** (choose after spike): e.g. call **`profileMenu.hide()`** (or equivalent **`Menu`** API) at the **start** or **end** of each `command`; use **`setTimeout(0)` / `queueMicrotask` / `afterNextRender`** only if required and justified; avoid **`setTimeout` without clear reason**.
+- [x] **Apply** the chosen pattern to **`themeMenuItems`** and **`app.language-switcher`** if affected.
+- [x] **Verify** focus: tab to trigger, open menu, activate item — **focus** and **screen reader** behavior acceptable.
+- [x] **Regression**: topbar **notifications** dropdown (non-`p-menu`) unchanged unless accidentally touched.
+
+### Handoff — ready for implementation
+
+Requirements are **ready**: implement **close-on-activate** for the **profile** `p-menu` (all actionable items, **especially logout**), **verify and align** **theme** and **language** `p-menu` popups if they share the issue, preserve **dismiss** and **a11y** behavior, and **close the menu even if navigation fails**. Engineering should **document the root cause** (PrimeNG default vs integration) in the PR or a short note for future upgrades.
+
+
+## Station detail — Working Hours tab: 30-minute grid, selection, and Save payload
+
+### Source intent
+
+> In station-management-detail page, there is a Working Hours tab. Add this tab a create a working hour component like a table to select working hour divided in 30 mins for each days. Days will be columns and times will be written in cells starting from 00:00 - 00:29 and continue for below cells will be 00:30-00:59, 01:00-01:29 till 23:30-23:59. mean 48 cells for each columns. I also need drag-to-select. selected working hours time must be summed and display at the bottom row. each selected cell must be considered as 30 mins NOT 29 mins. When double click of columns header (day names) it will select all cells, if all cell already selected double-click must be clear all selection for the day. When click Save button, the data output will be prepared.
+
+**Target JSON shape (example):**
+
+```json
+[
+    { "stationID": 4363, "dayOfTheWeek": 2, "openingTime": "01:00", "closingTime": "07:59", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 2, "openingTime": "11:00", "closingTime": "16:29", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 3, "openingTime": "02:30", "closingTime": "21:59", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 4, "openingTime": "00:30", "closingTime": "12:29", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 5, "openingTime": "07:30", "closingTime": "07:59", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 6, "openingTime": "02:30", "closingTime": "11:29", "isClosed": false },
+    { "stationID": 4363, "dayOfTheWeek": 7, "openingTime": "01:00", "closingTime": "09:29", "isClosed": false }
+]
+```
+
+### Goal
+
+Replace the **Working Hours** tab (**`p-tabpanel` value `"2"`**) placeholder on **`/station-management/:stationId`** with a **standalone working-hours grid**: seven day columns, forty-eight thirty-minute rows per day, intuitive selection (click, drag, column header double-click), a **per-day summary** of selected time, and a **Save** action that **builds** the contract JSON (including **`stationID`** from the current station). Align labels and day names with **`I18nService` / `TranslatePipe`** and existing **`stationMgmt.tabs.workingHours`** copy.
+
+### Product decisions
+
+| Topic | Default |
+|--------|--------|
+| **`dayOfTheWeek` encoding** | **1 = Sunday, 2 = Monday, …, 7 = Saturday** (aligns with stakeholder note; sample rows use **2–7** only). **Blocking:** confirm with backend — some APIs use **ISO Monday=1 … Sunday=7** instead; implement mapping in the serializer once confirmed. |
+| **Days closed (no cells selected)** | Emit **one object per closed day**: `{ "stationID", "dayOfTheWeek", "openingTime": "00:00", "closingTime": "00:00", "isClosed": true }` **or** omit the day — **blocking** unless API doc specifies. *Interim default for UI: still show summary **0h 0m** and let Save produce whatever backend requires once confirmed.* |
+| **Save destination (MVP)** | **Prepare payload** (component `@Output`, service method, or parent handler); **no live API** until endpoint exists — optional **`console.debug` behind dev flag** only if team agrees (not for production users). |
+| **Initial grid state** | **Empty** until **GET working hours** exists; then load and **map** API ranges → selected cells. *If API lags UI story: start empty + document follow-up.* |
+| **Drag across day columns** | **Single-column drag** by default (pointer column = column of mousedown); crossing columns **does not** change other days unless product explicitly wants multi-column paint (higher complexity). |
+| **Drag mode (select vs deselect)** | **Paint mode** fixed at **mousedown**: first cell under drag sets **select** or **deselect** for the whole gesture (standard spreadsheet-style). |
+| **Double-click column header** | **All 48 cells selected** if **not** all selected; **clear column** if **already** all selected (toggle full column). |
+| **Time labels in cells** | Display **inclusive** range text (**`HH:mm–HH:mm`**) as specified (e.g. `00:00–00:29`); **duration logic** still **+30 minutes** per cell. |
+| **Keyboard / screen reader** | **Phase 1:** document **mouse-first**; **Phase 2** (follow-up): roving tabindex, arrow keys, Space to toggle, **ARIA grid** if required by compliance. |
+| **Mobile / touch** | **Best effort**: long-press + drag may be **degraded**; **tap to toggle** must work; document limitation if drag-on-touch is out of MVP. |
+
+### Functional requirements
+
+1. **FR-1 — Tab integration**  
+   **Working Hours** tab (**value `"2"`**) shows the new component instead of **`stationMgmt.tabPlaceholder`**. Other placeholder tabs (**`"3"`–`"6"`**) unchanged unless explicitly refactored.
+
+2. **FR-2 — Grid layout**  
+   **Header row:** seven columns, **Mon–Sun** labels **translated** (reuse or add i18n keys under `stationMgmt` / shared calendar weekday keys if they exist).  
+   **Body:** **48** rows × **7** columns; row labels or cell content show **30-minute** slots from **`00:00–00:29`** through **`23:30–23:59`** (consistent **24h** formatting).
+
+3. **FR-3 — Cell toggle**  
+   **Single click** on a cell **toggles** that slot’s selection state.
+
+4. **FR-4 — Drag-to-select**  
+   **Pointer down** on a cell starts a **drag session**; **entering** other cells in the **same day column** while holding the button applies the **same mode** (select or deselect) as determined at gesture start **until pointer up** / **leave** (standard behavior).
+
+5. **FR-5 — Column header double-click**  
+   **Double-click** a day header: if **not** all **48** cells in that column are selected → **select all**; if **all** are selected → **clear** that column.
+
+6. **FR-6 — Summary row**  
+   **Bottom row** shows **total selected duration per day**; each selected cell counts as **exactly 30 minutes** (independent of “:29” end label). Display format **i18n-friendly** (e.g. `2h 30m` / localized equivalent).
+
+7. **FR-7 — Save**  
+   **Save** button **builds** an **array** of objects: `stationID` = current station id (**from detail** `row()?.id` / route param), `dayOfTheWeek`, `openingTime`, `closingTime`, `isClosed`.
+
+8. **FR-8 — Merge contiguous slots**  
+   **Consecutive** selected cells in the same day form **one** JSON object: `openingTime` = **start** of first slot (`HH:mm`), `closingTime` = **end instant of last slot minus one minute** (`HH:mm`), `isClosed: false`. **Non-contiguous** blocks → **multiple** objects same `dayOfTheWeek` (per sample).
+
+9. **FR-9 — Full day selection**  
+   All **48** cells selected for a day → **one** range: `openingTime: "00:00"`, `closingTime: "23:59"`, `isClosed: false`.
+
+10. **FR-10 — Station ID**  
+    **Every** emitted row includes the **numeric** `stationID` for the station being edited.
+
+### Non-functional requirements
+
+- **NFR-1 — i18n**  
+  Tab title, weekday headers, Save label, summary units, and any errors use **`TranslatePipe` / `I18nService`** for **en, tr, fr, de**.
+
+- **NFR-2 — Consistency**  
+  Visual design matches **Sakai / PrimeNG** patterns (spacing, surfaces, dark mode); selected cells have **clear** contrast and **focus-visible** where applicable.
+
+- **NFR-3 — Performance**  
+  **336** cells shall remain **responsive** (no per-cell heavy templates without virtual scroll unless profiling shows need).
+
+- **NFR-4 — Data integrity**  
+  Serialized times are **deterministic** (stable sort by `dayOfTheWeek` then `openingTime`); **no** floating-point duration math — use **integer half-hours** or minute counts internally.
+
+### Edge cases and negative scenarios
+
+| Scenario | Expected / note |
+|----------|------------------|
+| **Single cell selected** | One object: `openingTime` start of slot, `closingTime` slot end **−1 min** (e.g. `07:30`–`07:59`). |
+| **Two adjacent slots** | Merged into one range; `closingTime` reflects **last** slot end **−1 min**. |
+| **Gap between slots** | **Two** JSON entries same `dayOfTheWeek`. |
+| **No cells selected for a day** | Follow **closed-day** rule once **Product decisions** confirmed (omit vs `isClosed: true`). |
+| **Drag leaves column then re-enters** | Only cells in the **active column** during the gesture are affected (per single-column default). |
+| **`stationId` missing / not loaded** | Save **disabled** or shows **translated** message; **no** invalid payload. |
+| **Double-click vs click on header** | Double-click must **not** fire two conflicting single-click behaviors on headers (use **`dblclick`** and/or timing guard). |
+| **Text selection during drag** | **`user-select: none`** on grid during drag to avoid highlight churn. |
+| **RTL locales** | Column order **LTR week** vs **mirror** — **nice-to-know**; default **keep Mon→Sun LTR** unless product requests RTL mirror. |
+
+### Acceptance criteria
+
+- [x] Tab **`"2"`** shows the working-hours grid; other tabs still behave as before.
+- [x] Grid is **7 × 48**; labels match **30-minute** slots from **00:00–00:29** through **23:30–23:59**.
+- [x] **Click** toggles a single cell; **drag** in a column paints selection/deselection consistently.
+- [x] **Double-click** header selects all **48** cells or clears column per toggle rule.
+- [x] Summary row shows **correct** totals (**30 min × count**) per day, **i18n**-aware.
+- [x] **Save** produces JSON matching structure and **merging** rules; **sample scenarios** (multi-block Monday, full day, single cell) verifiable in unit tests or manual checklist.
+- [x] `stationID` in output matches current station; **`dayOfTheWeek`** mapping documented in code comment once backend confirms.
+- [x] `ng build` succeeds; **manual** smoke on **Chrome** (keyboard-only optional per scope).
+
+### Out of scope
+
+- **Persisting** working hours to a **real backend** (unless a separate story adds the endpoint and wires Save).
+- **Pricing / commissions / users / accounting** tabs.
+- **Timezone** semantics (station local vs UTC) — assume **local wall-clock** or document **same-as-server** assumption until API specifies.
+- **Full WCAG grid** keyboard spec (unless escalated to same milestone).
+- **Undo/redo**, **copy week to week**, **templates**.
+
+### Open questions (blocking vs nice-to-know)
+
+1. **Blocking — `dayOfTheWeek` contract**  
+   Confirm **1–7** meaning with backend (**Sunday vs ISO**). Adjust serializer **only** after confirmation.
+
+2. **Blocking — closed days**  
+   **Omit** vs **`isClosed: true`** row shape (and required `openingTime`/`closingTime` when closed).
+
+3. **Blocking — Save**  
+   Exact **handler**: parent emits to service, `POST` stub, download JSON, etc.
+
+4. **Nice-to-know — Read API**  
+   Field names and time precision for **loading** existing hours into the grid.
+
+5. **Nice-to-know — Touch**  
+   Whether **drag-to-select** on tablets is **required** for MVP.
+
+### Implementation breakdown (for engineering)
+
+- [x] **Extract** Working Hours from generic placeholder loop: dedicated **`p-tabpanel` value `"2"`** (or equivalent) hosting new **standalone component** (e.g. `station-working-hours-grid`).
+- [x] **State model:** `Set` or bitmask keyed by `(dayIndex, slotIndex)`; helpers for **iterate 48 slots**, **merge ranges**, **serialize JSON**.
+- [x] **Pointer handlers:** `mousedown` / `mouseenter` / `mouseup` / `mouseleave` (document `mouseup` listener to end drag outside grid); **`preventDefault`** where needed; **CSS** `user-select: none` during drag.
+- [x] **Header `dblclick`** on day column; **debounce** interaction conflicts with sort if any.
+- [x] **Summary:** derived **computed** from selection per column.
+- [x] **Save:** `@Output() savePayload` or inject service; **unit tests** for merge logic and **full-day** / **gap** / **single-cell** cases.
+- [x] **i18n:** weekday + button + summary strings in **`translations.ts`**.
+- [x] **Accessibility baseline:** **focusable** Save, **semantic** table or **`role="grid"`** if implemented; **`aria-label`** on cells if time permits.
+
+### Handoff — ready for implementation
+
+Implement the **Working Hours** tab UI as a **7×48** selectable grid with **click**, **column-scoped drag-to-select**, **double-click column toggle all/clear**, **per-day 30-minute-accurate summary**, and **Save** that **serializes** to the agreed JSON (**merge contiguous slots**, **`closingTime` = end − **1 minute**, **`isClosed: false`** for open ranges). **Confirm with backend** the **`dayOfTheWeek`** mapping and **closed-day** representation before locking the serializer; wire **Save** to the chosen sink once product confirms.
