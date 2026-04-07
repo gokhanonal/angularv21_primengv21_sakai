@@ -91,7 +91,8 @@ function formatDurationFromTemplate(fmt: string, totalMinutes: number): string {
     <div class="card mb-8!" appCardMaximize [showWindowMaximize]="true">
         <div class="card-header">
             <div class="card-heading">
-                <p class="card-description">Double click to select all cells, drag to select cells, double click to clear selection</p>
+                <p class="card-description">{{ 'stationMgmt.workingHours.description' | t }}</p>
+                
             </div>
         </div>
         <div class="card-header-divider"></div>

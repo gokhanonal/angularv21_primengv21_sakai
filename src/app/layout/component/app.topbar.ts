@@ -47,9 +47,19 @@ interface BreadcrumbItem {
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
-                    <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
-                </button>
+               <div class="relative flex shrink-0 items-center justify-center">
+                    <button
+                        type="button"
+                        class="layout-topbar-action"
+                        (click)="themeMenu.toggle($event)"
+                        [attr.aria-label]="themeMenuAria()"
+                        [attr.title]="'topbar.theme' | t"
+                        [attr.aria-haspopup]="'menu'"
+                    >
+                        <i [class]="themeTriggerIconClass()"></i>
+                    </button>
+                    <p-menu #themeMenu [popup]="true" [model]="themeMenuItems()" [appendTo]="'body'" styleClass="layout-topbar-theme-menu" />
+                </div>
                 <div class="relative">  
                     <button
                         class="layout-topbar-action layout-topbar-action-palette"
@@ -144,6 +154,8 @@ interface BreadcrumbItem {
     </div>`
 })
 export class AppTopbar {
+    @ViewChild('profileMenu') profileMenu!: Menu;
+
     items!: MenuItem[];
 
     router = inject(Router);
@@ -161,6 +173,50 @@ export class AppTopbar {
     profileMenuAria = computed(() => {
         this.i18n.lang();
         return this.i18n.t('topbar.profileMenuAria');
+    });
+
+
+    themeMenuAria = computed(() => {
+        this.i18n.lang();
+        return this.i18n.t('topbar.theme');
+    });
+
+    themeTriggerIconClass = computed(() => {
+        const mode = this.layoutService.layoutConfig().themeMode;
+        if (mode === 'light') {
+            return 'pi pi-sun';
+        }
+        if (mode === 'dark') {
+            return 'pi pi-moon';
+        }
+        return 'pi pi-desktop';
+    });
+
+    themeMenuItems = computed((): MenuItem[] => {
+        this.i18n.lang();
+        return [
+            {
+                label: this.i18n.t('theme.light'),
+                icon: 'pi pi-sun',
+                command: () => {
+                    this.layoutService.setThemeMode('light');
+                }
+            },
+            {
+                label: this.i18n.t('theme.dark'),
+                icon: 'pi pi-moon',
+                command: () => {
+                    this.layoutService.setThemeMode('dark');
+                }
+            },
+            {
+                label: this.i18n.t('theme.system'),
+                icon: 'pi pi-desktop',
+                command: () => {
+                    this.layoutService.setThemeMode('system');
+                }
+            }
+        ];
     });
 
     profileMenuItems = computed((): MenuItem[] => {
@@ -185,6 +241,8 @@ export class AppTopbar {
                 label: this.i18n.t('topbar.profileMenu.logout'),
                 icon: 'pi pi-sign-out',
                 command: () => {
+                    this.profileMenu?.hide();
+                    this.profileMenu?.container?.remove();
                     this.userProfile.clearMockSessionStorage();
                     void this.router.navigate(['/auth/login']);
                 }
@@ -224,6 +282,7 @@ export class AppTopbar {
     constructor() {
         effect(() => {
             this.i18n.lang();
+            this.layoutService.detailTabBreadcrumb();
             this.updateBreadcrumbs();
         });
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
@@ -266,6 +325,11 @@ export class AppTopbar {
             });
 
             nextRoute = currentRoute.firstChild;
+        }
+
+        const tabLabel = this.layoutService.detailTabBreadcrumb();
+        if (tabLabel && currentUrl) {
+            crumbs.push({ label: tabLabel, url: currentUrl });
         }
 
         this.breadcrumbs.set(crumbs);
