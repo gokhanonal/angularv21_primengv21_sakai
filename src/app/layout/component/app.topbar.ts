@@ -12,6 +12,7 @@ import { NotificationService } from '@/app/layout/service/notification.service';
 import { NotificationDetail } from '@/app/pages/notifications/notification-detail';
 import { I18nService } from '@/app/core/i18n/i18n.service';
 import { TranslatePipe } from '@/app/core/i18n/translate.pipe';
+import { clearStoredAuthToken } from '@/app/core/auth/auth-token';
 import { UserProfileService } from '@/app/core/profile/user-profile.service';
 
 interface BreadcrumbItem {
@@ -243,6 +244,7 @@ export class AppTopbar {
                 command: () => {
                     this.profileMenu?.hide();
                     this.profileMenu?.container?.remove();
+                    clearStoredAuthToken();
                     this.userProfile.clearMockSessionStorage();
                     void this.router.navigate(['/auth/login']);
                 }

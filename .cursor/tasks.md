@@ -2115,3 +2115,159 @@ On **Station management → station detail → Charging Units** tab, the widget 
 ### Handoff — ready for implementation
 
 Implement **optional `stationId`** on **`ChargingUnitWidget`**, load **filtered** units via existing **`getByStationId`**, wire **`[stationId]="r.id"`** on station detail, and **reconcile providers + parent `stationChargingUnits` placeholder** so the tab shows **one coherent list** and **no double fetch** where possible. Preserve **unfiltered** mode for usages without `stationId`. Verify connectors stay aligned with visible **`deviceCode`**s.
+
+## Auth: login page with validation, OTP dialog, and two-step API
+
+### Source intent
+
+Deliver an **`/auth/login`** experience where the user enters **email** and **password** with **client-side validation** (valid email format; password ≥ 8 characters and contains **at least one special character**). On **Sign In**, call **`baseApiUrl` + `loginApiUrl`** with JSON body **`{ "userName", "password" }`**. On **HTTP 200**, open a **modal/dialog** to collect a **six-digit numeric OTP**, then call **`baseApiUrl` + `validateOtpApiUrl`** with **`{ "userName", "password", "otpCode" }`**. On **HTTP 200** from validate, navigate to the **dashboard (`/`)**; otherwise **surface an error** (exact UX TBD pending product decisions below).
+
+### Goal
+
+Implement the above **two-step authentication flow** from the login screen, wired to environment-based API paths, with clear validation, loading/error behavior, and documented open questions—especially **production environment configuration** and **post-login token/session** handling—before marking the story implementation-complete.
+
+### Product / technical decisions (resolved 2026-04-08)
+
+| Topic | Resolution |
+|-------|------------|
+| **Environment** | Use **`environment.ts`** — when running with `--configuration uat`, Angular replaces it with `environment.uat.ts` automatically. |
+| **Username vs email** | **Username** field (not email). Form label = "Username"; payload field = `userName`. |
+| **Token / session after OTP 200** | Store **JWT in `localStorage`**; add **`HTTP_INTERCEPTOR`** to attach `Authorization` header; add **`CanActivate` route guard** on protected routes; redirect to `/auth/login` if no token. |
+| **OTP retry limit** | **No limit** on failed OTP attempts. |
+| **Resend OTP** | **Yes** — countdown from **180 seconds** in OTP dialog; when reaching 0, show "Resend OTP" button that calls `sendOtpApiUrl` (already in `environment.development.ts`/`uat.ts`). |
+| **Special characters** | **Non-alphanumeric** characters count as special (regex: `/[^a-zA-Z0-9]/`). |
+| **Error display** | **Inline validation errors** (red text under fields) for form validators; **toast notifications** (`MessageService`) for API errors/info. |
+| **Loading** | Disable Sign In / OTP submit with spinner on button during HTTP; no full overlay. |
+| **Remember me** | Checkbox exists but behavior **out of scope** for this story (cosmetic only). |
+
+### Functional requirements
+
+- **FR-1** Login route remains available at **`/auth/login`** (existing `auth.routes.ts`).
+- **FR-2** **Username** field: required; minimum length 1; trim whitespace.
+- **FR-3** **Password** field: required; **minimum length 8**; must contain **at least one special character** (non-alphanumeric: `/[^a-zA-Z0-9]/`).
+- **FR-4** **Sign In** must not call the API until **form is valid**; invalid submit shows **inline** (or agreed) errors.
+- **FR-5** On valid submit, **POST** to **`environment.baseApiUrl + environment.loginApiUrl`** with body **`{ "userName": <username>, "password": <password> }`**.
+- **FR-6** If login response **status is 200**, open a **dialog** prompting for **OTP**; show **180-second countdown**; when countdown reaches 0, show **"Resend OTP"** button. OTP input accepts **exactly six digits** (0–9 only); validate before second API call.
+- **FR-6a** Clicking **Resend OTP** calls **`POST`** `${baseApiUrl}${sendOtpApiUrl}` with body **`{ "userName": <username> }`**, then **restarts 180-second countdown**.
+- **FR-7** On OTP submit, **POST** to **`environment.baseApiUrl + environment.validateOtpApiUrl`** with body **`{ "userName": <username>, "password": <password>, "otpCode": "<6 digits>" }`**.
+- **FR-8** If validate response **status is 200**, **store JWT token** (from response body or header) in **`localStorage`**, then **navigate to `/`** (dashboard under `AppLayout`).
+- **FR-9** If either API returns **non-200** (or network failure), **show a toast error** to the user (no sensitive payload in UI).
+- **FR-9a** **HTTP Auth Interceptor**: Automatically attach **`Authorization: Bearer <token>`** header to all HTTP requests when JWT token exists in `localStorage`.
+- **FR-9b** **Auth Guard**: Add `CanActivate` guard on `AppLayout` routes (dashboard and all protected pages) that checks for JWT token; if missing, redirect to `/auth/login`.
+- **FR-9c** **Logout**: Clear `localStorage` token on logout (add logout button to topbar or menu — reuse existing menu items if present).
+- **FR-10** **i18n:** new user-visible strings use existing **`en` / `fr` / `de` / `tr`** pattern in `translations.ts` (and keys via `TranslatePipe` where the login page already does).
+
+### Non-functional requirements
+
+- **NFR-1** **No secrets** in source: URLs belong in **environment** files only; do not log passwords or OTP.
+- **NFR-2** **HTTPS** assumed for `baseApiUrl` in non-local environments (already true for current UAT URL).
+- **NFR-3** **CORS / cookies:** if API uses **HttpOnly cookies**, document **`withCredentials`** need; if **Bearer JWT**, document storage and **interceptor** (implementation follows blocking decisions).
+- **NFR-4** **Accessibility:** dialog focus trap, labels, and error announcements consistent with rest of PrimeNG/Angular app.
+
+### Edge cases and negative scenarios
+
+- **Empty or whitespace-only** email/password — blocked by validation.
+- **Login returns 200 but body indicates failure** — clarify with API; if only status matters per story, follow status; else parse contract (**nice-to-know**).
+- **Login non-200** (401/400/500) — show error; do **not** open OTP dialog.
+- **User closes OTP dialog** without success — remain on login; credentials not cleared unless product prefers clear (**nice-to-know**).
+- **Validate OTP non-200** — show error; remain in dialog or return to login per UX choice.
+- **Concurrent double-submit** — idempotent UI (disable buttons while in flight).
+- **Production build** with empty `environment` — runtime failure or wrong URL; **must fix env** before ship.
+- **Special character definition** — password rejected by API despite passing UI rules if sets differ.
+
+### Acceptance criteria
+
+- [x] **`/auth/login`**: username and password are **required** and show **inline** validation errors when invalid or on submit while invalid.
+- [x] Username is rejected when **empty/whitespace-only**; password is rejected when **shorter than 8 characters** or **no special character** (non-alphanumeric).
+- [x] **Sign In** calls **`POST`** `${baseApiUrl}${loginApiUrl}` with JSON **`userName`** + **`password`**; request uses values from the form.
+- [x] On **HTTP 200** from login, a **dialog** opens with **180-second countdown** and **Resend OTP** button (appears when countdown reaches 0); OTP field accepts **only six numeric digits** and validates before submit.
+- [x] Clicking **Resend OTP** calls **`POST`** `${baseApiUrl}${sendOtpApiUrl}` with **`userName`**, then **restarts countdown**.
+- [x] OTP submit calls **`POST`** `${baseApiUrl}${validateOtpApiUrl}` with **`userName`**, **`password`**, **`otpCode`**.
+- [x] On **HTTP 200** from validate OTP, **JWT token stored in `localStorage`**, then app **navigates to `/`** (or `returnUrl` if provided).
+- [x] On **failure** (non-200 or network error), user sees a **toast error** and **no silent success**.
+- [x] **Loading state** during both API calls (buttons disabled with spinner).
+- [x] **HTTP Interceptor** attaches **`Authorization: Bearer <token>`** header to all requests when token exists (skips auth URLs).
+- [x] **Auth Guard** redirects unauthenticated users from protected routes to `/auth/login` with `returnUrl`.
+- [x] **Logout** clears token and navigates to `/auth/login`.
+- [x] **`ng build`** succeeds with environment configuration.
+- [x] New i18n copy added for validation/errors/dialog/countdown in **en/fr/de/tr**.
+
+### Open questions (all resolved 2026-04-08)
+
+**Blocking — resolved:**
+1. ✓ **`environment.ts`**: Use as base file; Angular replaces with `uat`/`development` per `--configuration`.
+2. ✓ **`userName` vs email**: Use **username** field (not email) in UI; payload uses `userName`.
+3. ✓ **Token/session**: Store JWT in `localStorage`; add HTTP interceptor; add route guard.
+4. ✓ **Special characters**: **Non-alphanumeric** (`/[^a-zA-Z0-9]/`).
+
+**Nice-to-know — resolved:**
+5. ✓ **OTP retry limit**: **No limit**.
+6. ✓ **Resend OTP**: **Yes** — 180-second countdown, then button appears, calls `sendOtpApiUrl`.
+7. ✓ **Remember me**: **Out of scope** (cosmetic only for this story).
+8. ✓ **Route guards**: **In scope** — protect all routes except `/auth/*`.
+
+### Code / files to examine (engineering)
+
+- **Login UI:** `src/app/pages/auth/login.ts` — currently **`routerLink="/"`** on Sign In; **no** `HttpClient`, **no** validation beyond bindings.
+- **Routes:** `src/app/pages/auth/auth.routes.ts`, `src/app.routes.ts` — dashboard is **`path: ''`** under `AppLayout`; no auth guard.
+- **Environments:** `src/environments/environment.ts` (empty), `environment.development.ts`, `environment.uat.ts` — **URLs already set** in dev/UAT.
+- **HTTP:** `src/app.config.ts` — **`provideHttpClient(withFetch())`** only; **no** auth interceptor.
+- **i18n:** `src/app/core/i18n/translations.ts` — extend **`auth.login.*`** (and add OTP keys) for **en/fr/de/tr**.
+
+### Implementation breakdown (for engineering)
+
+- [x] Update **`environment.ts`** to define `baseApiUrl`, `loginApiUrl`, `validateOtpApiUrl`, `sendOtpApiUrl` (use same structure as `environment.development.ts`).
+- [x] Create **`AuthApiService`** with methods: `login(userName, password)`, `validateOtp(userName, password, otpCode)`, `sendOtp(userName)` — all returning appropriate typed responses with JWT token extraction.
+- [x] Create **`auth-token.ts`** utility for `localStorage` token read/write/clear.
+- [x] Refactor **`Login`** component to use **reactive forms** (`FormBuilder`) with **validators**: username (required), password (required, minLength 8, special char pattern `/[^a-zA-Z0-9]/`); surface **inline errors** via `p-message` components with zoneless-safe updates.
+- [x] Implement **Sign In flow**: call `AuthApiService.login()`, on 200 open OTP **dialog** (PrimeNG `p-dialog`) with: OTP input (6 digits, numeric only), 180-second **countdown timer**, **Resend OTP** button (appears at 0, restarts countdown), **Submit** button.
+- [x] Implement **OTP validation flow**: call `AuthApiService.validateOtp()`, on 200 store JWT token from response in `localStorage`, close dialog, navigate to `/` or `returnUrl`; on error show **toast** via `MessageService`.
+- [x] Implement **Resend OTP**: call `AuthApiService.sendOtp()`, restart 180-second countdown, show toast confirmation.
+- [x] Add **loading states**: disable buttons with spinner during API calls (`p-button [loading]`).
+- [x] Create **`AuthInterceptor`** (implements `HttpInterceptor`): reads token from `localStorage`, adds `Authorization: Bearer <token>` header if present; skips auth URLs.
+- [x] Register interceptor in `app.config.ts`: `provideHttpClient(withFetch(), withInterceptors([authInterceptor]))`.
+- [x] Create **`AuthGuard`** (`CanActivateFn`): checks `localStorage` for token; if absent, redirect to `/auth/login` with `returnUrl`.
+- [x] Apply `AuthGuard` to protected routes in `app.routes.ts` (dashboard/layout routes under `AppLayout`).
+- [x] Add **logout**: profile menu **Logout** calls `clearStoredAuthToken()` before navigation.
+- [x] Add **i18n keys**: `auth.login.*`, `auth.otp.*`, validation messages, error messages, countdown text in `en/fr/de/tr`.
+- [x] **Edge case handling**: close OTP dialog clears password, keeps username; invalid form shows inline errors; existing token redirects away from login.
+
+### Out of scope (unless product expands)
+
+- **Forgot password** flow implementation beyond existing route placeholder.
+- **Backend** changes or API mock server in repo (unless team adds `proxy.conf` for local dev).
+- **Biometric / SSO** login.
+- **Remember me** checkbox behavior (cosmetic only).
+
+### Handoff status
+
+**Completed** — all features implemented and `ng build` passes.
+
+**New files created:**
+- `src/app/core/auth/auth-token.ts` — Token storage utilities
+- `src/app/core/services/auth-api.service.ts` — Login, validate OTP, send OTP API calls
+- `src/app/core/interceptors/auth.interceptor.ts` — Bearer token HTTP interceptor
+- `src/app/core/guards/auth.guard.ts` — CanActivate guard for protected routes
+
+**Modified files:**
+- `src/environments/environment.ts` — Added API URLs
+- `src/app/pages/auth/login.ts` — Reactive form, inline validation, OTP dialog with countdown
+- `src/app/layout/component/app.topbar.ts` — Logout clears token
+- `src/app/app.config.ts` — Registered HTTP interceptor
+- `src/app/app.routes.ts` — Applied AuthGuard to protected routes
+- `src/app/core/i18n/translations.ts` — All auth keys in en/fr/de/tr
+
+## add 'Content-Type: application/json'  to the header of API calls
+
+### Acceptance criteria
+
+- [x] `AuthApiService.login()` includes `Content-Type: application/json` header
+- [x] `AuthApiService.validateOtp()` includes `Content-Type: application/json` header
+- [x] `AuthApiService.sendOtp()` includes `Content-Type: application/json` header
+- [x] `ng build` succeeds
+
+### Implementation
+
+Added `private readonly jsonHeaders = new HttpHeaders({ 'Content-Type': 'application/json' })` to `auth-api.service.ts` and applied to all three HTTP POST calls. Merged with existing `{ observe: 'response' }` options where needed.
+
+**Completed** — all API calls now include proper Content-Type header.

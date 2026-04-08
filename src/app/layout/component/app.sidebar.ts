@@ -53,7 +53,6 @@ export class AppSidebar implements OnInit, OnDestroy {
     @ViewChild('menuSearchInput') menuSearchInput?: ElementRef<HTMLInputElement>;
 
     layoutService = inject(LayoutService);
-
     router = inject(Router);
 
     el = inject(ElementRef);
@@ -100,6 +99,21 @@ export class AppSidebar implements OnInit, OnDestroy {
 
     @HostListener('document:keydown', ['$event'])
     onMenuSearchShortcut(event: KeyboardEvent) {
+        const state = this.layoutService.layoutState();
+
+        // ESC key closes sidebar when visible
+        if (event.key === 'Escape' && (state.overlayMenuActive || state.mobileMenuActive)) {
+            event.preventDefault();
+            this.layoutService.layoutState.update((val) => ({
+                ...val,
+                overlayMenuActive: false,
+                staticMenuMobileActive: false,
+                mobileMenuActive: false,
+                menuHoverActive: false
+            }));
+            return;
+        }
+
         const isShortcutPressed = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
         if (!isShortcutPressed) {
             return;
@@ -107,7 +121,6 @@ export class AppSidebar implements OnInit, OnDestroy {
 
         event.preventDefault();
         const config = this.layoutService.layoutConfig();
-        const state = this.layoutService.layoutState();
 
         if (this.layoutService.isDesktop() && config.menuMode === 'overlay' && !state.overlayMenuActive) {
             this.layoutService.layoutState.update((prev) => ({
